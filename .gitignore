@@ -1,0 +1,51 @@
+# Build output
+target/
+build/
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# Test and report output
+test-output/
+surefire-reports/
+failsafe-reports/
+reports/
+screenshots/
+allure-results/
+allure-report/
+cucumber-reports/
+*.log
+
+# JMeter run output
+perf/results/
+*.jtl
+
+# Node / Cypress
+node_modules/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.p12
+*.jks
+*.keystore
+secrets.properties
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+nbproject/
+
+# OS
+.DS_Store
+Thumbs.db
