@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.insurancebilling</groupId>
+    <artifactId>insurance-billing-qa-framework</artifactId>
+    <version>1.0.0</version>
+  </parent>
+
+  <artifactId>qa-ui-tests</artifactId>
+  <name>QA UI Tests</name>
+  <description>
+    Selenium 4 UI automation. Driver management and page objects live in src/main/java so the BDD
+    module can reuse them; the UI test classes live in src/test/java.
+  </description>
+
+  <properties>
+    <ui.headless>true</ui.headless>
+    <ui.screenshot.dir>${project.build.directory}/screenshots</ui.screenshot.dir>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+    </dependency>
+    <!-- The UI suite provisions its own test data through the API clients. -->
+    <dependency>
+      <groupId>com.insurancebilling</groupId>
+      <artifactId>qa-api-tests</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <systemPropertyVariables>
+            <app.base.url>${app.base.url}</app.base.url>
+            <ui.headless>${ui.headless}</ui.headless>
+            <ui.screenshot.dir>${ui.screenshot.dir}</ui.screenshot.dir>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

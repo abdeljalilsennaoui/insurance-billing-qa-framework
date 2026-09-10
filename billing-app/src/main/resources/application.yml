@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: billing-app
+
+  datasource:
+    url: jdbc:h2:mem:billing;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  thymeleaf:
+    cache: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# QA support endpoints (database reset) are disabled unless explicitly switched on.
+# CI and local automation runs enable them with --qa.test-support.enabled=true so that a
+# production-shaped deployment can never expose them by accident.
+qa:
+  test-support:
+    enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.insurancebilling: INFO
