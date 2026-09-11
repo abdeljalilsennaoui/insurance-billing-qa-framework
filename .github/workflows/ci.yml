@@ -1,0 +1,116 @@
+name: CI
+
+# Runs on every push to main and on every pull request, so a merge is gated by pipeline evidence
+# rather than by someone having run the suites locally.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to the same branch cancels the run still in flight: the older result is about to be
+# irrelevant, and leaving it running only delays the one that matters.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned to the same major the build targets via maven.compiler.release, so CI cannot pass on a
+  # JDK the project does not claim to support.
+  JAVA_VERSION: '21'
+
+jobs:
+  build:
+    name: Build and application tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      # -DskipITs excludes the suites that need a running application; they run in the job below.
+      # The application's own unit and integration tests do run here, so a broken build fails fast
+      # before anything spends time starting a server.
+      - name: Build all modules and run application tests
+        run: mvn -B clean install -DskipITs
+
+      # Passed to the automation job rather than rebuilt there: the suites must run against the same
+      # artifact these tests just validated, not a second build of the same source.
+      - name: Upload application jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: billing-app-jar
+          path: billing-app/target/billing-app.jar
+          retention-days: 5
+
+      - name: Upload application test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-test-reports
+          path: billing-app/target/surefire-reports/
+          retention-days: 5
+
+  api-tests:
+    name: API automation (REST Assured)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      # Installs the modules so the automation POMs resolve, without running anything.
+      #
+      # Both flags are needed: -DskipTests alone does not stop Failsafe 3.6.0 from executing the
+      # integration suite, which then fails with connection refused because no application is
+      # running yet. -DskipITs is the one that actually excludes it.
+      #
+      # This step must also precede the artifact download, because 'clean' would delete the jar.
+      - name: Install modules without running tests
+        run: mvn -B clean install -DskipITs -DskipTests
+
+      - name: Download application jar
+        uses: actions/download-artifact@v4
+        with:
+          name: billing-app-jar
+          path: billing-app/target
+
+      # Uses the same script a developer runs locally, so "works on my machine" and "works in CI"
+      # cannot diverge. The script polls the health endpoint instead of sleeping a fixed interval.
+      - name: Start application
+        run: scripts/start-app.sh
+
+      - name: Run API regression suite
+        run: mvn -B verify -pl qa-api-tests
+
+      - name: Stop application
+        if: always()
+        run: scripts/stop-app.sh
+
+      - name: Upload API test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-reports
+          path: qa-api-tests/target/failsafe-reports/
+          retention-days: 5
+
+      # Uploaded on failure only, because this is the artifact you want when a run goes red and the
+      # reports alone do not explain why.
+      - name: Upload application log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-log
+          path: billing-app/target/app.log
+          retention-days: 5
