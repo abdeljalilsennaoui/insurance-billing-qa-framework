@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The contract for the invoice status web service.
+
+  This project is contract-first: this schema is the source of truth, the Java request and response
+  classes are generated from it at build time by the jaxb2 plugin, and Spring WS serves the WSDL
+  generated from it at runtime. Nothing hand-written can drift away from the published contract,
+  because the only way to change the Java types is to change this file.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="http://insurancebilling.com/billing/invoice-status"
+           targetNamespace="http://insurancebilling.com/billing/invoice-status"
+           elementFormDefault="qualified">
+
+  <xs:element name="GetInvoiceStatusRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="invoiceNumber" type="tns:InvoiceNumber"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="GetInvoiceStatusResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="invoiceNumber" type="tns:InvoiceNumber"/>
+        <xs:element name="status" type="tns:InvoiceStatus"/>
+        <xs:element name="totalAmount" type="tns:Amount"/>
+        <xs:element name="amountPaid" type="tns:Amount"/>
+        <xs:element name="outstandingBalance" type="tns:Amount"/>
+        <xs:element name="overdue" type="xs:boolean"/>
+        <xs:element name="dueDate" type="xs:date"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Constrained rather than a bare xs:string, so a malformed request is refused by the contract
+       itself before any application code runs. -->
+  <xs:simpleType name="InvoiceNumber">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1"/>
+      <xs:maxLength value="40"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Enumerated so a consumer can generate an exhaustive switch, and so adding a state is a visible
+       contract change rather than a surprise string. -->
+  <xs:simpleType name="InvoiceStatus">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="UNPAID"/>
+      <xs:enumeration value="PARTIALLY_PAID"/>
+      <xs:enumeration value="PAID"/>
+      <xs:enumeration value="OVERDUE"/>
+      <xs:enumeration value="CANCELLED"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Money is decimal with two fraction digits, matching the REST contract and the domain. -->
+  <xs:simpleType name="Amount">
+    <xs:restriction base="xs:decimal">
+      <xs:fractionDigits value="2"/>
+      <xs:minInclusive value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>
