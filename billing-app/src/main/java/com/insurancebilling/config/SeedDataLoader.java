@@ -9,8 +9,7 @@ import com.insurancebilling.domain.PolicyType;
 import com.insurancebilling.repository.CustomerRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.annotation.Bean;
+import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,9 +29,34 @@ import org.springframework.transaction.annotation.Transactional;
 @Configuration
 public class SeedDataLoader {
 
-  @Bean
-  ApplicationRunner seedData(SeedDataWriter writer) {
-    return args -> writer.load();
+  /**
+   * Runs the seed load during bean initialisation, not from an {@code ApplicationRunner}.
+   *
+   * <p>This matters for test reliability. Spring Boot starts Tomcat as part of finishing the context
+   * refresh, but {@code ApplicationRunner} beans execute only *after* the refresh completes. Seeding
+   * from a runner therefore leaves a window in which the application already accepts requests — and
+   * already reports healthy — while the database is still empty. A suite that waits on the health
+   * endpoint and then immediately reads an invoice gets an intermittent 404.
+   *
+   * <p>A {@code @PostConstruct} on a singleton runs before the web server begins listening, which
+   * closes that window: if the application can be reached at all, the baseline is loaded.
+   *
+   * <p>The call has to cross a bean boundary for the writer's {@code @Transactional} to apply: a
+   * self-invocation would bypass the proxy and run without a transaction.
+   */
+  @Component
+  public static class SeedDataInitializer {
+
+    private final SeedDataWriter writer;
+
+    public SeedDataInitializer(SeedDataWriter writer) {
+      this.writer = writer;
+    }
+
+    @PostConstruct
+    void seed() {
+      writer.load();
+    }
   }
 
   /**

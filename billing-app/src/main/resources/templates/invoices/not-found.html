@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <title>Not found</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<main>
+  <h1 data-testid="page-title">Not found</h1>
+  <p class="banner error" data-testid="not-found-message" th:text="${message}"></p>
+  <a th:href="@{/invoices}" data-testid="back-to-list-link">Back to invoices</a>
+</main>
+</body>
+</html>
