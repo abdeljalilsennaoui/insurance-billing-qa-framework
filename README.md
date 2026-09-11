@@ -73,9 +73,10 @@ mvn -B clean install -DskipITs
 mvn -B verify -pl qa-api-tests
 
 # Narrower slices by TestNG group
-mvn -B verify -pl qa-api-tests -Dapi.groups=smoke      # 5 tests, critical path
-mvn -B verify -pl qa-api-tests -Dapi.groups=negative   # 30 rejection scenarios
-mvn -B verify -pl qa-api-tests -Dapi.groups=regression # 43 tests, full coverage
+mvn -B verify -pl qa-api-tests -Dapi.groups=smoke      # 6 tests, critical path
+mvn -B verify -pl qa-api-tests -Dapi.groups=negative   # 32 rejection scenarios
+mvn -B verify -pl qa-api-tests -Dapi.groups=regression # 50 tests, full coverage
+mvn -B verify -pl qa-api-tests -Dapi.groups=soap       # 7 SOAP tests
 
 # Point any suite at a different environment
 mvn -B verify -pl qa-api-tests -Dapp.base.url=http://localhost:9090
