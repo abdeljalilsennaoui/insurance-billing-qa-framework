@@ -24,11 +24,6 @@ public final class Money {
     return amount.setScale(SCALE, RoundingMode.UNNECESSARY);
   }
 
-  /** Returns the amount at the canonical scale, rounding half-up. Used for derived display values. */
-  public static BigDecimal round(BigDecimal amount) {
-    return amount.setScale(SCALE, RoundingMode.HALF_UP);
-  }
-
   /** True when the amount carries no more precision than the platform stores. */
   public static boolean hasValidScale(BigDecimal amount) {
     return amount.stripTrailingZeros().scale() <= SCALE;

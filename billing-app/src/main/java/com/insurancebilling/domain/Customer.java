@@ -7,7 +7,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.OneToMany;
@@ -68,7 +67,4 @@ public class Customer {
     return email;
   }
 
-  public List<Policy> getPolicies() {
-    return Collections.unmodifiableList(policies);
-  }
 }
