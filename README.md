@@ -153,6 +153,17 @@ The JMeter plan in [`perf/`](perf/README.md) is run manually, not in CI, and
 capacity measurement. A shared runner's CPU is too variable for response-time thresholds: they would
 either never fire or fire at random, and a performance gate that fails at random gets ignored.
 
+## Documentation
+
+| Document | What it covers |
+|---|---|
+| [Test strategy](docs/test-strategy.md) | Test levels, architectural decisions with their trade-offs, risk prioritisation, known limitations |
+| [Manual test cases](docs/manual-test-cases.md) | 22 cases with steps and expected results, each marked automated or not |
+| [Traceability matrix](docs/requirements-traceability-matrix.md) | 21 requirements mapped to manual cases and automated tests by class and method |
+| [Defect reports](docs/defect-reports.md) | The 9 defects found during development, each linked to its fixing commit |
+| [Agile workflow](docs/agile-workflow.md) | How the work was run, and how it maps to Jira and Zephyr |
+| [Performance results](perf/README.md) | Measured JMeter numbers and why they are not a capacity claim |
+
 ## Test counts
 
 | Suite | Tests | Runner |
