@@ -50,6 +50,26 @@ public class CustomerPolicyApiIT extends BaseApiTest {
     assertThat(customers.policiesOf(customer.id())).hasSize(2);
   }
 
+  @Test(groups = {"smoke", "regression"})
+  public void aPolicyCanBeRetrievedById() {
+    PolicyDto created = testData.activePolicy();
+
+    PolicyDto fetched = policies.get(created.id());
+
+    assertThat(fetched.policyNumber()).isEqualTo(created.policyNumber());
+    assertThat(fetched.status()).isEqualTo("ACTIVE");
+    assertThat(fetched.annualPremium()).isEqualByComparingTo(created.annualPremium());
+    assertThat(fetched.customerName()).isEqualTo(created.customerName());
+  }
+
+  @Test(groups = {"negative", "regression"})
+  public void anUnknownPolicyIsNotFound() {
+    Response response = policies.getRaw(999_999_999L);
+
+    assertThat(response.statusCode()).isEqualTo(404);
+    assertThat(response.as(ApiError.class).code()).isEqualTo("NOT_FOUND");
+  }
+
   @Test(groups = {"negative", "regression"})
   public void aMissingRequiredFieldNamesTheOffendingField() {
     Map<String, Object> body = new LinkedHashMap<>();
