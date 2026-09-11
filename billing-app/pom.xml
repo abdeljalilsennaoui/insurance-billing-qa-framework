@@ -35,6 +35,21 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <!-- SOAP endpoint. Insurance platforms commonly still expose SOAP services to partners. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web-services</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <version>${jaxb.runtime.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>wsdl4j</groupId>
+      <artifactId>wsdl4j</artifactId>
+      <version>${wsdl4j.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
@@ -53,9 +68,43 @@
     </dependency>
   </dependencies>
 
+  <properties>
+    <jaxb.runtime.version>4.0.9</jaxb.runtime.version>
+    <wsdl4j.version>1.6.3</wsdl4j.version>
+    <jaxb2.plugin.version>3.2.0</jaxb2.plugin.version>
+  </properties>
+
   <build>
     <finalName>billing-app</finalName>
     <plugins>
+      <!--
+        Generates the SOAP request and response classes from the XSD at build time.
+
+        Contract-first rather than code-first: the schema is the source of truth and the Java types
+        follow from it, so nothing hand-written can drift away from the published contract. Generated
+        sources go to target/, never into version control, because a generated file committed next to
+        its generator is a second source of truth waiting to disagree.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>jaxb2-maven-plugin</artifactId>
+        <version>${jaxb2.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>generate-soap-contract-classes</id>
+            <goals>
+              <goal>xjc</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <sources>
+            <source>src/main/resources/xsd/invoice-status.xsd</source>
+          </sources>
+          <packageName>com.insurancebilling.soap.generated</packageName>
+          <clearOutputDir>false</clearOutputDir>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
