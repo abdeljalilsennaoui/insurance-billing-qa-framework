@@ -16,7 +16,6 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -83,14 +82,6 @@ public class Policy {
     invoice.setPolicy(this);
   }
 
-  public void cancel() {
-    this.status = PolicyStatus.CANCELLED;
-  }
-
-  public void lapse() {
-    this.status = PolicyStatus.LAPSED;
-  }
-
   public boolean isActive() {
     return status == PolicyStatus.ACTIVE;
   }
@@ -135,7 +126,4 @@ public class Policy {
     return endDate;
   }
 
-  public List<Invoice> getInvoices() {
-    return Collections.unmodifiableList(invoices);
-  }
 }

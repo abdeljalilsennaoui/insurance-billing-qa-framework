@@ -67,16 +67,15 @@ public class InvoiceListPage extends BasePage {
   /**
    * Applies the status filter and waits for the reloaded list.
    *
-   * <p>Waits for staleness of the submitted button rather than for the page title, because the title is
-   * present on the page already on screen and such a wait is satisfied before the browser has navigated.
-   * See the note on InvoiceDetailsPage.waitForPageReplacement: the same mistake there produced
-   * intermittent StaleElementReferenceException.
+   * <p>Waiting for the page title would be satisfied by the page already on screen, since the title is
+   * present on both. The document marker is the reliable signal — see
+   * {@link BasePage#waitForNewDocument()} for why element staleness was not.
    */
   public InvoiceListPage filterByStatus(String status) {
     selectOption("status-filter", status);
-    WebElement applyButton = driver.findElement(testId("apply-filter-button"));
-    applyButton.click();
-    wait.until(ExpectedConditions.stalenessOf(applyButton));
+    markCurrentDocument();
+    click("apply-filter-button");
+    waitForNewDocument();
     wait.until(ExpectedConditions.visibilityOfElementLocated(testId("page-title")));
     return this;
   }

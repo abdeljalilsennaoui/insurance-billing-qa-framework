@@ -4,6 +4,7 @@ import com.insurancebilling.qa.ui.config.UiConfig;
 import com.insurancebilling.qa.ui.driver.DriverFactory;
 import java.util.List;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -90,6 +91,51 @@ public abstract class BasePage {
     } catch (NoSuchElementException absent) {
       return false;
     }
+  }
+
+  /**
+   * Name of the marker set on {@code window} to detect a page replacement.
+   *
+   * <p>Prefixed to make a collision with application script impossible, though the console runs no
+   * JavaScript of its own.
+   */
+  private static final String NAVIGATION_MARKER = "__ibqfNavigationMarker";
+
+  /**
+   * Marks the current document immediately before an action that navigates.
+   *
+   * <p>Pair with {@link #waitForNewDocument()}. A full page load creates a fresh {@code window}, so the
+   * marker's disappearance is proof the browser replaced the document rather than merely re-rendered part
+   * of it.
+   */
+  protected void markCurrentDocument() {
+    ((JavascriptExecutor) driver).executeScript("window." + NAVIGATION_MARKER + " = true;");
+  }
+
+  /**
+   * Waits until the marked document has been replaced and the new one has finished loading.
+   *
+   * <p>This replaced an earlier implementation built on {@code ExpectedConditions.stalenessOf}, which was
+   * correct in principle and unreliable in practice. {@code stalenessOf} decides an element is stale by
+   * touching it and catching {@code StaleElementReferenceException} — but when a document has been
+   * discarded mid-navigation, ChromeDriver may instead raise a CDP-level
+   * {@code WebDriverException: Node with given id does not belong to the document}, which
+   * {@code stalenessOf} does not catch and which therefore escapes as a test error. It passed consistently
+   * on a developer machine and failed on a CI runner: a timing and Chrome-version dependent race.
+   *
+   * <p>Asking the document about itself avoids the problem entirely, because it never touches a reference
+   * that may already be dead. Checking {@code readyState} as well means the caller does not then race the
+   * new page's own rendering.
+   */
+  protected void waitForNewDocument() {
+    wait.until(
+        driver ->
+            Boolean.TRUE.equals(
+                ((JavascriptExecutor) driver)
+                    .executeScript(
+                        "return window."
+                            + NAVIGATION_MARKER
+                            + " === undefined && document.readyState === 'complete';")));
   }
 
   public String currentUrl() {

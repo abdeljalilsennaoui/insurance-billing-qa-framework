@@ -70,13 +70,6 @@ public class InvoiceService {
     return invoices.findById(id).orElseThrow(() -> new ResourceNotFoundException("Invoice", id));
   }
 
-  @Transactional(readOnly = true)
-  public Invoice findByNumber(String invoiceNumber) {
-    return invoices
-        .findByInvoiceNumber(invoiceNumber)
-        .orElseThrow(() -> new ResourceNotFoundException("Invoice", invoiceNumber));
-  }
-
   /**
    * Lists invoices, optionally filtered by status.
    *

@@ -34,6 +34,7 @@
     <slf4j.version>2.0.17</slf4j.version>
 
     <surefire.version>3.6.0</surefire.version>
+    <jacoco.version>0.8.15</jacoco.version>
     <failsafe.version>3.6.0</failsafe.version>
 
     <!-- Default target for every suite that drives the running application. -->
@@ -121,6 +122,11 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
           <version>${spring.boot.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>${jacoco.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>

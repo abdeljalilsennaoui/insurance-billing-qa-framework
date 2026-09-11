@@ -120,6 +120,113 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
       </plugin>
+
+      <!--
+        Line and branch coverage for this module's own unit and integration tests.
+
+        prepare-agent instruments the forked Surefire JVM, so this covers the 66 tests that run in
+        process. It does NOT cover the API, UI or BDD suites: those drive the application over HTTP in a
+        separate JVM, and from the test JVM's perspective nothing in this module was ever called.
+        Measuring those needs the agent on the application process instead - see scripts/coverage.sh.
+      -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>prepare-unit-coverage</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>unit-coverage-report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+
+          <!--
+            Combines the in-process execution data with the data the agent wrote from the application
+            process while the black-box suites ran. Bound to no phase and invoked explicitly by
+            scripts/coverage.sh as jacoco:merge@merge-all-coverage, because it only makes sense after the
+            application has exited and flushed its data.
+          -->
+          <execution>
+            <id>merge-all-coverage</id>
+            <phase>none</phase>
+            <goals>
+              <goal>merge</goal>
+            </goals>
+            <configuration>
+              <fileSets>
+                <fileSet>
+                  <directory>${project.build.directory}</directory>
+                  <includes>
+                    <include>jacoco.exec</include>
+                    <include>jacoco-e2e.exec</include>
+                  </includes>
+                </fileSet>
+              </fileSets>
+              <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>full-coverage-report</id>
+            <phase>none</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+              <outputDirectory>${project.build.directory}/site/jacoco-full</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <excludes>
+            <!--
+              Generated from the XSD by xjc. Excluded because coverage of generated code measures the
+              generator, not this project's tests, and including it would inflate the figure with
+              setters nobody wrote.
+            -->
+            <exclude>com/insurancebilling/soap/generated/**</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <!--
+        Copies the JaCoCo agent jar next to the application jar so scripts/start-app.sh can attach it to
+        the application process for full-stack coverage. Resolved through Maven rather than downloaded by
+        a script, so the agent version cannot drift from the plugin version.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-jacoco-agent</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.jacoco</groupId>
+                  <artifactId>org.jacoco.agent</artifactId>
+                  <version>${jacoco.version}</version>
+                  <classifier>runtime</classifier>
+                  <destFileName>jacoco-agent.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

@@ -1,6 +1,6 @@
 # Defect reports
 
-Nine defects found while building and stabilising this project. Every one was actually encountered —
+Eleven defects found while building and stabilising this project. Every one was actually encountered —
 none is an illustrative example written to fill a template. Each is linked to the commit that fixed it,
 so the claim can be checked against the history.
 
@@ -20,6 +20,8 @@ or testing the wrong thing.
 | DEF-007 | Start script reports healthy for a server it did not start | High | SOAP suite investigation | `c98a7d6` |
 | DEF-008 | Cucumber hooks never registered | High | BDD UI scenarios | in PR #33 |
 | DEF-009 | SOAP endpoint rejects `application/xml` | Medium | SOAP suite | in PR #35 |
+| DEF-010 | Surefire claims an `*IT` class and runs it without an application | Medium | Coverage work | in PR #42 |
+| DEF-011 | `stalenessOf` escapes as a CDP error on a CI runner | High | CI, not local | in PR #42 |
 
 ---
 
@@ -295,11 +297,87 @@ GPath *parameter reference*, not a path. Fixed by naming the path from the docum
 
 ---
 
-## Observations across the nine
+## DEF-010 — Surefire claims an `*IT` class and runs it without an application
 
-- **Four of nine were found by automated tests** (DEF-001, DEF-002, DEF-006, DEF-008), two by **manual
-  exploratory checking** (DEF-003, DEF-004), and three only by **deliberately verifying the tooling did
-  what it was told** (DEF-005, DEF-007, DEF-009).
+**Severity:** Medium · **Priority:** Immediate · **Component:** Test infrastructure
+
+**Steps to reproduce**
+
+1. Name an integration test `TestSupportResetIT`, extending `BaseApiTest`.
+2. Run `mvn clean install -DskipITs` with no application running.
+
+**Expected:** the class is a Failsafe integration test; `-DskipITs` excludes it and the build passes.
+
+**Actual:** `BUILD FAILURE`. Surefire ran it during the `test` phase:
+`Running com.insurancebilling.qa.api.TestSupportResetIT` → `java.net.ConnectException: Connection
+refused` in the suite-level health check.
+
+**Root cause:** Surefire's default includes are `Test*.java`, `*Test.java`, `*Tests.java` and
+`*TestCase.java`. `TestSupportResetIT` matches the **first** pattern. Ending in `IT` is not enough to keep
+a class out of Surefire's hands — the name must also avoid starting with `Test`.
+
+**Resolution:** renamed to `ResetEndpointIT`, with the reason recorded in the class Javadoc so the next
+person naming a test-support class does not rediscover it.
+
+**Why it is worth recording:** the failure looked like an environment problem — "connection refused, the
+app must not be up" — when the real cause was that a file name matched a pattern. The misleading part is
+that the class was correctly suffixed for Failsafe, so the naming looked deliberate and correct.
+
+## DEF-011 — `stalenessOf` escapes as a CDP error on a CI runner
+
+**Severity:** High · **Priority:** Immediate · **Component:** UI automation
+
+**Environment:** Failed on `ubuntu-latest` with the runner's Chrome. **Passed consistently on macOS**, over
+many local runs including two consecutive full-suite passes.
+
+**Steps to reproduce:** run the Selenium suite on a GitHub-hosted runner.
+
+**Expected:** 18 of 18 pass, as locally.
+
+**Actual:** 17 of 18. `aPartialPaymentReducesTheOutstandingBalance` errored:
+
+```
+WebDriver unknown error: unhandled inspector error:
+{"code":-32000,"message":"Node with given id does not belong to the document"}
+  at ExpectedConditions$24.apply(ExpectedConditions.java:686)
+  at InvoiceDetailsPage.waitForPageReplacement(InvoiceDetailsPage.java:121)
+```
+
+**Root cause:** the fix for DEF-006. `ExpectedConditions.stalenessOf` decides an element is stale by
+*touching* it and catching `StaleElementReferenceException`. When a document has been discarded
+mid-navigation, ChromeDriver may instead raise a CDP-level `WebDriverException` carrying
+`Node with given id does not belong to the document`. `stalenessOf` does not catch that, so it escapes as a
+test error rather than being treated as the staleness it actually represents.
+
+Which exception arrives depends on how far navigation has progressed when the probe lands, so it is a race
+— and one whose odds differ by machine and Chrome version. The DEF-006 fix was correct about *what* to wait
+for and wrong about *how* to detect it.
+
+**Resolution:** stop touching the old element. Before navigating, set a marker on `window`; afterwards,
+wait until the marker is gone **and** `document.readyState === 'complete'`. A full page load creates a
+fresh `window`, so the marker's disappearance is positive proof the document was replaced, and asking the
+document about itself never dereferences something that may already be dead.
+
+Applied in `BasePage.markCurrentDocument` / `waitForNewDocument`, used by both the payment form and the
+list filter.
+
+**Why this one is the most instructive in the list:** it only ever failed in CI. Locally it passed every
+time, including the deliberate two-consecutive-runs isolation check. A suite that is green on a developer
+machine is evidence about that machine, and nothing more — which is the whole argument for the pipeline
+being the gate rather than a local run.
+
+**Not done:** no retry, and no `ignoring(WebDriverException.class)` on the wait. Ignoring the exception
+class would have made the symptom disappear while leaving the wait probing a dead reference, and would
+have swallowed genuine driver errors with it.
+
+## Observations across the eleven
+
+- **Five of eleven were found by automated tests** (DEF-001, DEF-002, DEF-006, DEF-008, DEF-011), two by
+  **manual exploratory checking** (DEF-003, DEF-004), three only by **deliberately verifying the tooling did
+  what it was told** (DEF-005, DEF-007, DEF-009), and one by **adding coverage measurement** (DEF-010).
+- **DEF-011 was found only by CI.** It passed every local run, including the two-consecutive-passes
+  isolation check. That is the clearest evidence in this repository for why the pipeline is the gate and a
+  local green run is not.
 - **That middle group is the argument for manual smoke checks.** DEF-003 and DEF-004 were both found by
   driving the application with `curl` before writing any automation. DEF-004 in particular would
   otherwise have become intermittent CI flakiness blamed on the tests.

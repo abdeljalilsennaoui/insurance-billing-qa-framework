@@ -61,10 +61,6 @@ public class Payment {
     return id;
   }
 
-  public Invoice getInvoice() {
-    return invoice;
-  }
-
   public BigDecimal getAmount() {
     return amount;
   }

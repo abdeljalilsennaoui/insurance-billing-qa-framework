@@ -55,6 +55,19 @@ jobs:
           path: billing-app/target/surefire-reports/
           retention-days: 5
 
+      # JaCoCo line and branch coverage for the application's own tests, produced by the build above at
+      # no extra cost. This is in-process coverage only: it cannot see what the API, UI and BDD suites
+      # exercise, because those drive a separate JVM. The full-stack figure needs the agent attached to
+      # the application process and is produced by scripts/coverage.sh - see docs/coverage.md for why CI
+      # publishes the narrower number rather than re-running every suite to widen it.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-in-process
+          path: billing-app/target/site/jacoco/
+          retention-days: 5
+
   api-tests:
     name: API automation (REST Assured)
     runs-on: ubuntu-latest
