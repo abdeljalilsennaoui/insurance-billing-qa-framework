@@ -172,7 +172,9 @@ parameter, warns, ignores it, and falls back to running every `*IT` class.
 files were **deleted** rather than left in place, because configuration that looks functional while
 being inert is worse than no configuration at all.
 
-**Verification:** by count — `smoke` 5, `negative` 30, `regression` 43.
+**Verification:** by count — at the time of the fix, `smoke` 5, `negative` 30, `regression` 43. Those
+numbers have since grown to 6, 32 and 50 as the SOAP tests joined the same groups; the README carries the
+current figures. Counting is the verification, whatever the numbers are.
 
 **Lesson:** a passing build is not evidence that the thing you asked for happened. Assert on what the
 tooling actually did.
