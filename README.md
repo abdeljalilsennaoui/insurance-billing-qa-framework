@@ -163,6 +163,7 @@ either never fire or fire at random, and a performance gate that fails at random
 | [Defect reports](docs/defect-reports.md) | The 9 defects found during development, each linked to its fixing commit |
 | [Agile workflow](docs/agile-workflow.md) | How the work was run, and how it maps to Jira and Zephyr |
 | [Performance results](perf/README.md) | Measured JMeter numbers and why they are not a capacity claim |
+| [Interview guide](docs/interview-guide.md) | Architecture walkthroughs by file path, with the uncomfortable questions answered |
 
 ## Test counts
 
