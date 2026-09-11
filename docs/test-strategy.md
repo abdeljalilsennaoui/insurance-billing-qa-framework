@@ -1,0 +1,261 @@
+# QA test strategy
+
+## 1. Purpose and scope
+
+This document states what is tested in the insurance billing platform, at which level, why the suites
+are split the way they are, and what has deliberately been left out.
+
+**In scope:** the billing domain (customers, policies, invoices, payments), the REST API, the SOAP
+invoice status service, and the invoice web console.
+
+**Out of scope, and why:**
+
+| Not tested | Reason |
+|---|---|
+| Authentication and authorisation | The application has none. Adding a half-built security layer purely to test it would produce tests about a fiction. |
+| Cross-browser coverage | Chrome only. The console is server-rendered HTML with no JavaScript, so the rendering differences a cross-browser matrix exists to catch largely do not apply. |
+| Accessibility | Not covered. A real billing product would need it; this project does not claim it. |
+| Database migration / upgrade paths | Schema is created from entities at startup against in-memory H2. There are no migrations to test. |
+| Mobile viewports | The console is responsive enough to use, but no viewport assertions exist. |
+
+## 2. Test levels and what each suite is responsible for
+
+The suites are layered so that a failure points at a cause rather than at a symptom.
+
+| Level | Where | Count | Runs against | Responsible for |
+|---|---|---|---|---|
+| Domain unit | `billing-app/src/test/java/.../domain/` | 27 | Nothing — plain objects | Billing rules and balance arithmetic |
+| Application integration | `billing-app/src/test/java/.../api/` | 39 | Spring context + MockMvc | HTTP contract, status codes, error shape, rendered templates |
+| API automation | `qa-api-tests` | 50 | Running application over HTTP | The published contract as a client sees it |
+| UI automation | `qa-ui-tests` | 18 | Running application via Chrome | Browser journeys through the console |
+| BDD | `qa-bdd-tests` | 20 | Running application (API + Chrome) | Billing rules expressed as readable specifications |
+| Smoke | `cypress` | 7 | Running application via Cypress | Independent confirmation the console works |
+| Performance | `perf` | 1 plan | Running application | Throughput and latency trend, manual |
+
+**Total automated: 161 tests**, of which 155 run on every pull request.
+
+### Why the domain rules are tested three times over
+
+`Invoice.applyPayment` rules are covered by unit tests, by API tests, and by BDD scenarios. That is
+intentional, not redundancy, because each layer can fail independently:
+
+- The **unit test** proves the rule is correct.
+- The **API test** proves the rule is reachable through HTTP and reported with the right status and
+  code. A correct rule behind a controller that returns 500 is still a broken product.
+- The **BDD scenario** proves the rule is the one the business asked for, in language a
+  non-programmer can check.
+
+If only the unit tests existed, a mapping bug in the exception handler would ship. If only the API
+tests existed, every rule change would need a running server to verify, and the feedback loop would
+go from milliseconds to seconds.
+
+## 3. The test pyramid, and where this project departs from it
+
+The intended shape holds — many fast unit tests, fewer integration tests, fewest browser tests:
+
+```
+         7  Cypress smoke          slowest, narrowest
+        18  Selenium UI
+        20  BDD scenarios
+        50  API automation
+        39  Application integration
+        27  Domain unit            fastest, broadest
+```
+
+Two honest departures:
+
+1. **The middle is heavier than the classic pyramid.** 89 integration-and-API tests against 27 unit
+   tests. This is deliberate: the product's risk is concentrated in the HTTP contract (the 400 vs 422
+   distinction, the error codes) rather than in algorithmic complexity. Testing where the risk is
+   beats matching a diagram.
+2. **There is browser coverage in two tools.** Selenium carries the full journeys; Cypress checks only
+   the critical path. The justification is triangulation — if Cypress passes and Selenium fails, the
+   fault is in the Java suite rather than the application — and it is recorded honestly as a portfolio
+   decision as much as a technical one.
+
+## 4. Architectural decisions
+
+Each decision below is recorded as: what it does, why it exists, how it works, how it is tested, and
+what it costs.
+
+### 4.1 Billing rules live on the entity, not in a service
+
+- **What:** `Invoice.applyPayment` validates and records payments. `InvoiceService` only looks the
+  invoice up and manages the transaction.
+- **Why:** rules on the entity cannot be bypassed by a caller that reaches the entity another way, and
+  they can be tested without Spring.
+- **How:** the method checks amount validity, then invoice state, then policy state, then the
+  overpayment comparison, throwing `PaymentRejectedException` with a `PaymentRejectionReason`.
+- **Tested by:** `InvoicePaymentRulesTest` (9 methods, 15 executed cases) with no Spring context.
+- **Trade-off:** the entity is larger than an anaemic model. Accepted, because unbypassable rules are
+  worth more than a thin class.
+
+### 4.2 Rules are checked cheapest-first
+
+- **What:** an invalid amount is reported before an invalid invoice state.
+- **Why:** the caller is told the thing it can fix without further information.
+- **How:** ordered guard clauses in `applyPayment`.
+- **Tested by:** `InvoicePaymentRulesTest.amountIsValidatedBeforeInvoiceState` — a negative amount
+  against a cancelled invoice must report the amount.
+- **Trade-off:** the order is now part of the contract and a test will fail if it changes. That is the
+  point.
+
+### 4.3 HTTP 400 versus 422
+
+- **What:** 400 when a request cannot be understood; 422 when it was understood and a billing rule
+  refused it, with the reason in `code`.
+- **Why:** without the split, a test cannot prove a billing rule ran at all. A zero payment returning
+  400 is indistinguishable from a parse failure.
+- **How:** `GlobalExceptionHandler` maps `MethodArgumentNotValidException` to 400 and
+  `PaymentRejectedException` to 422; `PaymentRequest` validates only presence, never value.
+- **Tested by:** `PaymentValidationApiIT.malformedBodiesAreRejectedAsBadRequestsNotRuleViolations`
+  and `invalidAmountsAreRefusedWithTheirOwnReason`.
+- **Trade-off:** 422 is less widely used than 400 and a consumer may be surprised. Documented in the
+  README table.
+
+### 4.4 Paid amount is derived, never stored
+
+- **What:** `getAmountPaid()` sums the payment list.
+- **Why:** a stored running total can drift out of step with the payment history.
+- **How:** a stream reduction at a fixed scale of 2.
+- **Tested by:** `InvoiceBalanceTest.amountPaidIsSumOfPayments`, and
+  `sequentialPartialPaymentsSettleInvoiceExactly` (33.33 + 33.33 + 33.34 = 100.00).
+- **Trade-off:** a sum per read. Irrelevant at this data volume; would need revisiting with thousands
+  of payments per invoice.
+
+### 4.5 `BigDecimal` at scale 2 everywhere
+
+- **What:** no `double` in the money path; `Money` centralises scale handling.
+- **Why:** instalments must add up to the total exactly.
+- **How:** `Money.normalise` uses `RoundingMode.UNNECESSARY`, so a value needing rounding throws
+  rather than silently losing a cent.
+- **Tested by:** the instalment test above, plus `AMOUNT_SCALE_INVALID` cases rejecting `10.001`.
+- **Trade-off:** more verbose than `double`. Not negotiable for money.
+
+### 4.6 Server-rendered Thymeleaf rather than an SPA
+
+- **What:** the console is server-rendered HTML, no JavaScript framework, no frontend build.
+- **Why:** a Java-first stack, a deterministic DOM with no hydration race to wait on, and no Node build
+  in CI.
+- **How:** Thymeleaf templates with `data-testid` on every element a test addresses.
+- **Tested by:** `InvoiceConsoleWebTest` (server side), `qa-ui-tests` (browser), Cypress (smoke).
+- **Trade-off:** the project does not demonstrate SPA testing — no waiting on XHR, no component-level
+  testing. This is the most significant gap relative to a modern frontend role.
+
+### 4.7 Automation modules do not depend on `billing-app`
+
+- **What:** `qa-api-tests` models enum-valued fields as `String`.
+- **Why:** if both sides shared the enum, renaming a constant would change test and application
+  together and the suite would still pass while the published contract had broken.
+- **How:** records in `qa-api-tests/src/main/java/.../model/` with no dependency on the application.
+- **Tested by:** the whole API suite — it only ever sees JSON.
+- **Trade-off:** no compile-time safety on status strings. A typo fails at runtime instead of at
+  compile time. Accepted, because testing the contract matters more than convenience.
+
+### 4.8 Framework code in `src/main/java`, tests in `src/test/java`
+
+- **What:** clients, page objects and builders are main sources of their modules.
+- **Why:** `qa-bdd-tests` can depend on them as ordinary libraries instead of consuming a test-jar.
+- **How:** plain Maven module dependencies.
+- **Tested by:** the BDD step definitions, which contain no automation logic of their own.
+- **Trade-off:** test helpers ship as main artifacts. Harmless here; they are never published.
+
+### 4.9 Every mutating test owns its data
+
+- **What:** `BillingTestData` creates a customer, policy and invoice per scenario.
+- **Why:** shared data is the usual cause of suites that pass alone and fail together, or pass once and
+  fail on re-run because the first run consumed the balance.
+- **How:** fixtures built through the public API with UUID-suffixed emails.
+- **Tested by:** running the full API suite twice against one application instance — verified.
+- **Trade-off:** more HTTP calls per test. Worth it for order independence and parallelism.
+
+### 4.10 Explicit waits only, no implicit wait, no sleep
+
+- **What:** all waiting goes through `BasePage` helpers. `Thread.sleep` appears nowhere.
+- **Why:** mixing implicit and explicit waits produces timeouts belonging to neither; a sleep is either
+  too slow or too short.
+- **How:** `WebDriverWait` with condition-based expectations; after a form submit, waiting for
+  *staleness* of an element from the submitted page.
+- **Tested by:** the UI suite passing repeatedly, and DEF-006 in the defect log, which is exactly the
+  failure a weaker wait caused.
+- **Trade-off:** more code per interaction than `sleep(2000)`. That is the correct trade.
+
+## 5. Test data and environment strategy
+
+- **Environment:** a single Spring Boot application on in-memory H2. No external infrastructure, no
+  Docker, no network dependencies. A suite can therefore run on any machine with a JDK and Chrome.
+- **Baseline:** `SeedDataLoader` loads 3 customers, 4 policies and 6 invoices covering every invoice
+  state. Dates are relative to startup, so the set is identical on every run and no invoice drifts into
+  being overdue over time.
+- **Seeding happens in `@PostConstruct`**, before the web server accepts requests, so if the
+  application is reachable the baseline exists. See DEF-004 for why this matters.
+- **Mutating tests create their own data.** Seeded records are for reads and for the Cypress smoke
+  suite.
+- **Reset:** `POST /api/test-support/reset` restores the baseline, gated by `qa.test-support.enabled`
+  (default `false`) so a deployment that has not opted in has no route that can wipe its data. It is
+  used between suite runs, not between tests: per-test resets would serialise everything and make
+  parallel execution impossible.
+
+## 6. Entry and exit criteria
+
+**Entry:** the application builds, `mvn -B clean install -DskipITs` passes, and the application starts
+and reports healthy.
+
+**Exit, per pull request:** all five CI jobs green; no test disabled or skipped to achieve it; any
+defect found either fixed in the same PR or recorded as an open issue.
+
+**Exit, for the v1.0 release:** every suite passes on a repeat run against one application instance;
+every README command verified by execution; the audit checklist in issue #25 complete.
+
+## 7. Risk-based prioritisation
+
+Ranked by what would hurt most if it were wrong:
+
+| Risk | Severity | Coverage |
+|---|---|---|
+| An invoice accepts more than it is owed | Critical — direct financial error | Unit, API, BDD, UI, and a dedicated remaining-balance test |
+| A payment is lost or double-counted | Critical | Derived paid amount, payment ordering tests, concurrent payment load in JMeter |
+| Rounding loses money across instalments | Critical | `BigDecimal` scale 2, exact-instalment test, scale rejection tests |
+| A payment is accepted on a lapsed or cancelled policy | High — billing a customer who is not covered | Unit, API, BDD, UI |
+| A rejection reports the wrong reason | High — misleads support and consumers | Every negative test asserts the specific `code` |
+| Balance shown in the console differs from the API | Medium | Console tests assert rendered figures; a SOAP test cross-checks against REST |
+| Overdue is computed inconsistently | Medium | Unit tests for the asymmetry, API and UI overdue tests |
+| Performance regression | Low at this stage | JMeter plan, manual, trend only |
+
+## 8. Defect management
+
+Severity:
+
+| Level | Definition |
+|---|---|
+| Critical | Money is wrong, lost, or double-counted; data loss; the application will not start |
+| High | A billing rule can be bypassed or reports the wrong reason; a core journey is blocked |
+| Medium | Incorrect display, a misleading message, or a test-infrastructure defect that can mask a real failure |
+| Low | Cosmetic, or an inconvenience with a workaround |
+
+Workflow: reproduce → write a failing test that captures it → fix → confirm the test passes → commit
+the fix with a message explaining the root cause, not just the symptom.
+
+Nine defects were found and fixed during development; all are recorded in
+[`defect-reports.md`](defect-reports.md) with the commit that fixed each. Notably, three of them
+(DEF-005, DEF-007, DEF-008) were **defects in the test infrastructure that made green runs
+untrustworthy** — the category worth the most attention, because it undermines every other result.
+
+## 9. Known limitations
+
+Stated plainly rather than omitted:
+
+1. **The Jenkins pipeline has never been executed.** No controller was available. It is a reference
+   implementation; GitHub Actions is what actually runs.
+2. **Performance numbers are not a capacity measurement.** Load generator and application share one
+   machine, the database is in-memory, the dataset is tiny, the run is five seconds. See
+   [`../perf/README.md`](../perf/README.md).
+3. **No SPA testing.** The console is server-rendered by design, so nothing here demonstrates waiting
+   on asynchronous client-side state.
+4. **Chrome only.** No cross-browser matrix.
+5. **No security testing.** The application has no authentication to test.
+6. **No accessibility testing.**
+7. **Cypress duplicates part of the Selenium coverage.** Justified as triangulation, but it is
+   duplication and is acknowledged as such.
+8. **The UI suite is slow relative to its value** — roughly 50s for 18 tests, because each starts a
+   fresh browser. Session reuse would be faster and less isolated; isolation was chosen.
