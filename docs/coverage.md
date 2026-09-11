@@ -138,8 +138,11 @@ already producing:
 | Job | What it contributes |
 |---|---|
 | `build` | `jacoco.exec` — the application's own 66 unit and integration tests |
-| `api-tests`, `ui-tests`, `bdd-tests`, `cypress-smoke` | one `jacoco-e2e.exec` each, written by the agent inside the application process those suites drove |
-| `coverage` | downloads all five, merges them, renders the report, sends it to Codecov and SonarQube Cloud |
+| `api-tests`, `ui-tests`, `bdd-tests` | one `jacoco-e2e.exec` each, written by the agent inside the application process those suites drove |
+| `coverage` | downloads all four, merges them, renders the report, sends it to Codecov and SonarQube Cloud |
+
+The `cypress-smoke` job contributes nothing: it runs no Maven build, so there is no agent jar on that
+runner, and its coverage would repeat what the Selenium suite already records.
 
 Each suite job starts the application with `JACOCO=true scripts/start-app.sh` — the same switch
 `scripts/coverage.sh` uses locally — and uploads what the agent wrote on shutdown.

@@ -149,8 +149,8 @@ Jobs 2 to 5 run against the exact artifact the first job validated, rather than 
 same source, and they run in parallel. Test reports upload on success and failure; the application log
 uploads on failure, which is what is actually needed to diagnose a red run.
 
-Each of those four jobs starts the application with the JaCoCo agent attached, so the final job can
-measure what the black-box suites exercised without re-running any of them — see
+Jobs 2 to 4 start the application with the JaCoCo agent attached, so the final job can measure what the
+black-box suites exercised without re-running any of them — see
 [docs/code-quality.md](docs/code-quality.md).
 
 CI uses the same `scripts/start-app.sh` a developer runs locally, so "works on my machine" and "works

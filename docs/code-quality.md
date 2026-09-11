@@ -16,7 +16,7 @@ about the change in front of a reviewer rather than about the project as a whole
 > **Status: the Sonar analysis has never executed.** It needs a SonarQube Cloud project and a
 > `SONAR_TOKEN` secret, neither of which existed when this was written. What was and was not verified is
 > recorded in [the last section](#what-has-and-has-not-been-verified), and the workflow step carries the
-> same warning. The Codecov upload and the coverage merge that feeds both tools have run.
+> same warning.
 
 ---
 
@@ -34,15 +34,19 @@ package alone reads 44% against 94%. [`coverage.md`](coverage.md) covers the mec
 So the pipeline collects both halves:
 
 ```
-build            ── runs the 66 application tests ──────────────► jacoco.exec
+build         ── runs the 66 application tests ─────────────────► jacoco.exec
 api-tests    ─┐
 ui-tests      ├── JACOCO=true scripts/start-app.sh ─────────────► jacoco-e2e.exec  (one per job)
-bdd-tests     │   the agent is inside the application process
-cypress-smoke ┘
+bdd-tests    ─┘   the agent is inside the application process
                                                                         │
-coverage ── downloads all five, merges, renders ────────────────────────┘
+coverage ── downloads all four, merges, renders ────────────────────────┘
             └─► full-stack report ─► Codecov, Sonar, and the badges
 ```
+
+The `cypress-smoke` job is not instrumented. It never runs a Maven build — it needs the jar artifact and
+Node, nothing else — so no agent jar exists there to attach, and adding a build to that job would buy
+coverage that duplicates the Selenium suite's almost exactly. Its result still has to be green before
+the coverage job runs.
 
 **Nothing is re-run to get this.** Earlier, CI published the narrower in-process number on the grounds
 that the full-stack figure would mean running every suite a second time inside one job — several minutes

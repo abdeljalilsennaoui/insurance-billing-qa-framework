@@ -324,11 +324,12 @@ jobs:
           npx cypress install
           npx cypress verify
 
-      # JACOCO=true attaches the coverage agent to the application process. Without it this suite's
-      # contribution to coverage is invisible: it drives the application over HTTP from another JVM,
-      # and an in-process report cannot see a single line of what it exercises.
-      - name: Start application with the coverage agent
-        run: JACOCO=true scripts/start-app.sh
+      # Not instrumented, unlike the three suites above. This job deliberately never runs a Maven
+      # build - it needs the jar artifact and Node, nothing else - so there is no JaCoCo agent jar
+      # here to attach. Building the project just to collect coverage would add minutes to the job
+      # for data that almost entirely duplicates what the Selenium suite already records.
+      - name: Start application
+        run: scripts/start-app.sh
 
       - name: Run Cypress smoke suite
         working-directory: cypress
@@ -337,15 +338,6 @@ jobs:
       - name: Stop application
         if: always()
         run: scripts/stop-app.sh
-
-      # The agent writes this file from a JVM shutdown hook, so it exists only because the stop step
-      # above ran first. Merged with every other suite's data by the coverage job.
-      - name: Upload cypress execution data
-        uses: actions/upload-artifact@v4
-        with:
-          name: jacoco-exec-cypress
-          path: billing-app/target/jacoco-e2e.exec
-          retention-days: 5
 
       - name: Upload Cypress screenshots
         if: failure()
@@ -359,9 +351,13 @@ jobs:
   # Full-stack coverage, static analysis, and the coverage figure that ends up on the badges.
   #
   # This job exists because the interesting coverage number cannot be produced by any single job above.
-  # The application's own tests are measured in-process by the build job; everything the API, UI, BDD and
-  # smoke suites exercise is recorded by the agent inside the *application* process, in four separate
-  # jobs. Merging the five execution files is what turns 91% line coverage into 99%.
+  # The application's own tests are measured in-process by the build job; everything the API, UI and
+  # BDD suites exercise is recorded by the agent inside the *application* process, in three separate
+  # jobs. Merging the four execution files is what turns 91% line coverage into 99%.
+  #
+  # The Cypress job is in `needs` but contributes nothing: it runs no Maven build, so no agent jar
+  # exists there. Its coverage would duplicate the Selenium suite's almost exactly, which is not worth
+  # adding a build to that job for.
   #
   # Nothing is re-run to get it. The suites already ran; this job collects what they recorded, which is
   # what makes measuring the full picture in CI affordable at all.
@@ -414,7 +410,7 @@ jobs:
       - name: Collect the execution data
         run: |
           cp coverage-data/jacoco-exec-in-process/jacoco.exec billing-app/target/jacoco.exec
-          for suite in api ui bdd cypress; do
+          for suite in api ui bdd; do
             cp "coverage-data/jacoco-exec-$suite/jacoco-e2e.exec" "billing-app/target/jacoco-e2e-$suite.exec"
           done
           ls -l billing-app/target/*.exec
