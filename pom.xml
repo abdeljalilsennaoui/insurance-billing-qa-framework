@@ -36,9 +36,32 @@
     <surefire.version>3.6.0</surefire.version>
     <jacoco.version>0.8.15</jacoco.version>
     <failsafe.version>3.6.0</failsafe.version>
+    <sonar.plugin.version>5.8.0.7211</sonar.plugin.version>
 
     <!-- Default target for every suite that drives the running application. -->
     <app.base.url>http://localhost:8080</app.base.url>
+
+    <!--
+      SonarQube Cloud analysis. Configured here rather than in a sonar-project.properties file: the
+      Maven scanner takes its configuration from the POM and ignores that file in a multi-module
+      build, so a properties file would look authoritative while doing nothing.
+
+      The analysis itself runs only in CI, where SONAR_TOKEN exists. See docs/code-quality.md.
+    -->
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    <sonar.organization>abdeljalilsennaoui</sonar.organization>
+    <sonar.projectKey>abdeljalilsennaoui_insurance-billing-qa-framework</sonar.projectKey>
+    <!--
+      Both reports are listed, and only one of them exists at a time.
+
+      An ordinary build produces the in-process report, which is what CI has. scripts/coverage.sh
+      additionally produces the full-stack report, which includes everything the API, UI and BDD
+      suites exercise in the application's own JVM - the difference is 91% line coverage against 99%,
+      and docs/coverage.md explains why. Listing both means a local analysis after coverage.sh sends
+      the fuller picture without needing different arguments; the scanner warns about the path that
+      is absent and carries on.
+    -->
+    <sonar.coverage.jacoco.xmlReportPaths>${maven.multiModuleProjectDirectory}/billing-app/target/site/jacoco/jacoco.xml,${maven.multiModuleProjectDirectory}/billing-app/target/site/jacoco-full/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
   <dependencyManagement>
@@ -108,6 +131,16 @@
 
     <pluginManagement>
       <plugins>
+        <!--
+          Pinned rather than invoked as the unversioned 'sonar:sonar' prefix, which resolves to
+          whatever the latest release is on the day the job runs. A scanner that upgrades itself
+          without a commit can change an analysis result with nothing in the history to explain it.
+        -->
+        <plugin>
+          <groupId>org.sonarsource.scanner.maven</groupId>
+          <artifactId>sonar-maven-plugin</artifactId>
+          <version>${sonar.plugin.version}</version>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>

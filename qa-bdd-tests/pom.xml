@@ -18,6 +18,19 @@
   </description>
 
   <properties>
+    <!--
+      Everything in this module is test code, including what lives in src/main/java. Those classes are
+      the framework the tests are written against - clients, page objects, specifications - not product
+      code that ships.
+
+      Saying so matters for two reasons. Sonar applies a different, more appropriate rule set to test
+      code. And a file Sonar treats as product code with no coverage data behind it counts as 0%
+      covered, so leaving the default would drag the project's coverage figure down with framework
+      classes that nothing measures and nothing was ever going to.
+    -->
+    <sonar.sources></sonar.sources>
+    <sonar.tests>src/test/java</sonar.tests>
+
     <ui.headless>true</ui.headless>
     <cucumber.filter.tags>not @wip</cucumber.filter.tags>
   </properties>

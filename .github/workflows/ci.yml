@@ -68,6 +68,15 @@ jobs:
           path: billing-app/target/site/jacoco/
           retention-days: 5
 
+      # The raw execution data rather than the rendered report: the coverage job merges this with what
+      # the application process records while the black-box suites drive it.
+      - name: Upload in-process execution data
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-exec-in-process
+          path: billing-app/target/jacoco.exec
+          retention-days: 5
+
   api-tests:
     name: API automation (REST Assured)
     runs-on: ubuntu-latest
@@ -100,8 +109,11 @@ jobs:
 
       # Uses the same script a developer runs locally, so "works on my machine" and "works in CI"
       # cannot diverge. The script polls the health endpoint instead of sleeping a fixed interval.
-      - name: Start application
-        run: scripts/start-app.sh
+      # JACOCO=true attaches the coverage agent to the application process. Without it this suite's
+      # contribution to coverage is invisible: it drives the application over HTTP from another JVM,
+      # and an in-process report cannot see a single line of what it exercises.
+      - name: Start application with the coverage agent
+        run: JACOCO=true scripts/start-app.sh
 
       - name: Run API regression suite
         run: mvn -B verify -pl qa-api-tests
@@ -109,6 +121,15 @@ jobs:
       - name: Stop application
         if: always()
         run: scripts/stop-app.sh
+
+      # The agent writes this file from a JVM shutdown hook, so it exists only because the stop step
+      # above ran first. Merged with every other suite's data by the coverage job.
+      - name: Upload api execution data
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-exec-api
+          path: billing-app/target/jacoco-e2e.exec
+          retention-days: 5
 
       - name: Upload API test reports
         if: always()
@@ -151,8 +172,11 @@ jobs:
           name: billing-app-jar
           path: billing-app/target
 
-      - name: Start application
-        run: scripts/start-app.sh
+      # JACOCO=true attaches the coverage agent to the application process. Without it this suite's
+      # contribution to coverage is invisible: it drives the application over HTTP from another JVM,
+      # and an in-process report cannot see a single line of what it exercises.
+      - name: Start application with the coverage agent
+        run: JACOCO=true scripts/start-app.sh
 
       # Chrome is preinstalled on ubuntu-latest runners, and Selenium Manager resolves a matching
       # chromedriver at runtime, so there is nothing to install or pin here. The suite is headless by
@@ -163,6 +187,15 @@ jobs:
       - name: Stop application
         if: always()
         run: scripts/stop-app.sh
+
+      # The agent writes this file from a JVM shutdown hook, so it exists only because the stop step
+      # above ran first. Merged with every other suite's data by the coverage job.
+      - name: Upload ui execution data
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-exec-ui
+          path: billing-app/target/jacoco-e2e.exec
+          retention-days: 5
 
       - name: Upload UI test reports
         if: always()
@@ -214,8 +247,11 @@ jobs:
           name: billing-app-jar
           path: billing-app/target
 
-      - name: Start application
-        run: scripts/start-app.sh
+      # JACOCO=true attaches the coverage agent to the application process. Without it this suite's
+      # contribution to coverage is invisible: it drives the application over HTTP from another JVM,
+      # and an in-process report cannot see a single line of what it exercises.
+      - name: Start application with the coverage agent
+        run: JACOCO=true scripts/start-app.sh
 
       - name: Run Cucumber scenarios
         run: mvn -B verify -pl qa-bdd-tests
@@ -223,6 +259,15 @@ jobs:
       - name: Stop application
         if: always()
         run: scripts/stop-app.sh
+
+      # The agent writes this file from a JVM shutdown hook, so it exists only because the stop step
+      # above ran first. Merged with every other suite's data by the coverage job.
+      - name: Upload bdd execution data
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-exec-bdd
+          path: billing-app/target/jacoco-e2e.exec
+          retention-days: 5
 
       # The HTML reports are the readable artefact for these suites: they show which scenario and which
       # step failed, in business language, without anyone reading a stack trace.
@@ -279,8 +324,11 @@ jobs:
           npx cypress install
           npx cypress verify
 
-      - name: Start application
-        run: scripts/start-app.sh
+      # JACOCO=true attaches the coverage agent to the application process. Without it this suite's
+      # contribution to coverage is invisible: it drives the application over HTTP from another JVM,
+      # and an in-process report cannot see a single line of what it exercises.
+      - name: Start application with the coverage agent
+        run: JACOCO=true scripts/start-app.sh
 
       - name: Run Cypress smoke suite
         working-directory: cypress
@@ -290,6 +338,15 @@ jobs:
         if: always()
         run: scripts/stop-app.sh
 
+      # The agent writes this file from a JVM shutdown hook, so it exists only because the stop step
+      # above ran first. Merged with every other suite's data by the coverage job.
+      - name: Upload cypress execution data
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-exec-cypress
+          path: billing-app/target/jacoco-e2e.exec
+          retention-days: 5
+
       - name: Upload Cypress screenshots
         if: failure()
         uses: actions/upload-artifact@v4
@@ -298,3 +355,104 @@ jobs:
           path: cypress/cypress/screenshots/
           retention-days: 5
           if-no-files-found: ignore
+
+  # Full-stack coverage, static analysis, and the coverage figure that ends up on the badges.
+  #
+  # This job exists because the interesting coverage number cannot be produced by any single job above.
+  # The application's own tests are measured in-process by the build job; everything the API, UI, BDD and
+  # smoke suites exercise is recorded by the agent inside the *application* process, in four separate
+  # jobs. Merging the five execution files is what turns 91% line coverage into 99%.
+  #
+  # Nothing is re-run to get it. The suites already ran; this job collects what they recorded, which is
+  # what makes measuring the full picture in CI affordable at all.
+  coverage:
+    name: Coverage and static analysis
+    runs-on: ubuntu-latest
+    needs: [build, api-tests, ui-tests, bdd-tests, cypress-smoke]
+    env:
+      # Job-level so the analysis step's condition can read it. A pull request from a fork gets no
+      # repository secrets, so this is empty there and the step skips rather than failing.
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # SonarQube Cloud uses the history to attribute issues and to work out what counts as new
+          # code. With the default shallow clone every line looks new on every run.
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      # The scanner downloads its analysers from the server otherwise, on every run, which is the
+      # slowest part of the analysis and identical between runs.
+      - name: Cache SonarQube Cloud analysers
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: sonar-${{ runner.os }}
+          restore-keys: sonar-${{ runner.os }}
+
+      # Compiles the classes the coverage report and the analysis are about. No tests: they have all
+      # run already, and their results are what this job is assembling.
+      #
+      # It must also come before the download, because 'clean' would delete the execution files.
+      - name: Build without running tests
+        run: mvn -B clean install -DskipITs -DskipTests
+
+      - name: Download every suite's execution data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jacoco-exec-*
+          path: coverage-data
+
+      # Each artifact holds a file with the same name, so they are renamed on the way in. The merge
+      # execution in billing-app/pom.xml picks up jacoco.exec and anything matching jacoco-e2e*.exec.
+      - name: Collect the execution data
+        run: |
+          cp coverage-data/jacoco-exec-in-process/jacoco.exec billing-app/target/jacoco.exec
+          for suite in api ui bdd cypress; do
+            cp "coverage-data/jacoco-exec-$suite/jacoco-e2e.exec" "billing-app/target/jacoco-e2e-$suite.exec"
+          done
+          ls -l billing-app/target/*.exec
+
+      - name: Merge and render full-stack coverage
+        run: mvn -B -pl billing-app jacoco:merge@merge-all-coverage jacoco:report@full-coverage-report
+
+      - name: Upload full-stack coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-full-stack
+          path: billing-app/target/site/jacoco-full/
+          retention-days: 5
+
+      # Codecov comments on the pull request with the coverage of the lines that pull request changed.
+      # That is the figure worth reading on a diff; a project-wide percentage barely moves and says
+      # nothing about the change in front of you.
+      #
+      # codecov.yml configures both statuses as informational: they report, they do not block. See
+      # docs/code-quality.md for why this project has no coverage threshold.
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: billing-app/target/site/jacoco-full/jacoco.xml
+          flags: full-stack
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # A coverage service that cannot be reached is not a reason to fail a build whose tests
+          # passed.
+          fail_ci_if_error: false
+
+      # Static analysis: bugs, code smells, security hotspots and duplication, with the merged coverage
+      # above imported alongside them.
+      #
+      # NOTE: this step has never executed. It needs a SONAR_TOKEN secret and a SonarQube Cloud project,
+      # neither of which existed when it was written. docs/code-quality.md records the setup it needs and
+      # exactly what was and was not verified.
+      - name: SonarQube Cloud analysis
+        if: env.SONAR_TOKEN != ''
+        run: mvn -B sonar:sonar
+

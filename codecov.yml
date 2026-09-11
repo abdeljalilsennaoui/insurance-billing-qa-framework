@@ -1,0 +1,31 @@
+# Codecov configuration.
+#
+# The uploaded report is the merged full-stack one produced by the `coverage` job in
+# .github/workflows/ci.yml: the application's own tests plus everything the API, UI, BDD and smoke
+# suites exercise in the running application. See docs/code-quality.md.
+
+coverage:
+  status:
+    # Both statuses are informational on purpose: they post the number and never block a merge.
+    #
+    # This project has no coverage threshold, for the reason given in docs/coverage.md — a threshold
+    # chosen before seeing the numbers is arbitrary, and one chosen to match them is decoration. What
+    # is worth having is the number in front of a reviewer, which is what these statuses provide.
+    #
+    # There is a second reason not to gate here. Several of the remaining uncovered branches are
+    # defensive code that no route through the application can reach; a gate would eventually be
+    # satisfied by writing tests that construct impossible states, which is worse than the gap.
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+comment:
+  # Header, the coverage of the lines this pull request touched, and the affected files. The full file
+  # tree on every pull request is noise, and noise on a pull request gets scrolled past.
+  layout: "condensed_header, diff, files"
+  # No comment when a pull request changes no covered code — documentation and workflow changes get a
+  # coverage comment that only says "no change", and it trains everyone to ignore the comment.
+  require_changes: true

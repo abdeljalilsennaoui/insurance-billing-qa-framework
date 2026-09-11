@@ -1,6 +1,8 @@
 # Insurance Billing QA Framework
 
 [![CI](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=abdeljalilsennaoui_insurance-billing-qa-framework&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=abdeljalilsennaoui_insurance-billing-qa-framework)
+[![codecov](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework/branch/main/graph/badge.svg)](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework)
 ![Java](https://img.shields.io/badge/Java-21-blue)
 ![Maven](https://img.shields.io/badge/build-Maven-C71A36)
 ![REST Assured](https://img.shields.io/badge/API-REST%20Assured-green)
@@ -133,14 +135,23 @@ assertion could not tell "the client sent nonsense" from "the platform applied a
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to `main` and every pull
 request:
 
-1. **Build and application tests** — builds all modules, runs the application's unit and integration
-   tests, publishes the application jar as an artifact.
+1. **Build, application tests** — builds all modules, runs the application's 66 unit and integration
+   tests, publishes the application jar and its coverage data as artifacts.
 2. **API automation** — downloads that jar, starts it, runs the REST Assured regression suite, stops
-   it, and uploads test reports.
+   it, uploads test reports.
+3. **UI automation** — the same, for the Selenium suite.
+4. **BDD scenarios** — the same, for Cucumber.
+5. **Smoke suite** — the same, for Cypress.
+6. **Coverage and static analysis** — merges the coverage data every job above produced, renders the
+   full-stack report, and submits it to Codecov and SonarQube Cloud.
 
-The automation job runs against the exact artifact the first job validated, rather than a second
-build of the same source. Test reports upload on success and failure; the application log uploads on
-failure, which is what is actually needed to diagnose a red run.
+Jobs 2 to 5 run against the exact artifact the first job validated, rather than a second build of the
+same source, and they run in parallel. Test reports upload on success and failure; the application log
+uploads on failure, which is what is actually needed to diagnose a red run.
+
+Each of those four jobs starts the application with the JaCoCo agent attached, so the final job can
+measure what the black-box suites exercised without re-running any of them — see
+[docs/code-quality.md](docs/code-quality.md).
 
 CI uses the same `scripts/start-app.sh` a developer runs locally, so "works on my machine" and "works
 in CI" cannot quietly diverge.
@@ -174,6 +185,7 @@ either never fire or fire at random, and a performance gate that fails at random
 | [Agile workflow](docs/agile-workflow.md) | How the work was run, and how it maps to Jira and Zephyr |
 | [Performance results](perf/README.md) | Measured JMeter numbers and why they are not a capacity claim |
 | [Code coverage](docs/coverage.md) | Line and branch coverage, how black-box suites are measured, every remaining gap named |
+| [Code quality tooling](docs/code-quality.md) | JaCoCo, SonarQube Cloud and Codecov — what each answers, how they are configured, what is allowed to block a merge |
 | [Interview guide](docs/interview-guide.md) | Architecture walkthroughs by file path, with the uncomfortable questions answered |
 
 ## Test counts
@@ -221,6 +233,10 @@ The two columns differ because the API, UI and BDD suites drive the application 
 an ordinary in-process coverage run sees nothing of what they exercise — the SOAP package reads 44%
 in-process and 94% full-stack. `scripts/coverage.sh` attaches the JaCoCo agent to the application process
 and merges the execution data.
+
+CI produces the full-stack figure too, by attaching the agent in each suite job and merging the results
+in a final job, so the number on the badges is the one that accounts for the black-box suites rather than
+the narrower in-process one.
 
 Branch coverage is the lower, more honest figure, and every one of the six missed branches is accounted
 for individually in [docs/coverage.md](docs/coverage.md). There is deliberately **no coverage gate**: a
