@@ -51,6 +51,10 @@ again:
 ./scripts/run-all.sh
 ```
 
+Its six steps are: build and application tests, start application, API suite, UI suite, BDD scenarios,
+Cypress smoke. The Cypress step is skipped with a notice if its npm dependencies are not installed; every
+Java suite is mandatory.
+
 The application is stopped on exit via a trap, so a failing suite never leaves a process holding
 port 8080.
 
@@ -167,12 +171,26 @@ either never fire or fire at random, and a performance gate that fails at random
 
 ## Test counts
 
-| Suite | Tests | Runner |
-|---|---|---|
-| Domain unit tests | 27 | JUnit 5 |
-| Application API and web integration tests | 39 | JUnit 5 + MockMvc |
-| API automation | 43 | TestNG + REST Assured |
+| Suite | Tests | Runner | In CI |
+|---|---:|---|---|
+| Domain unit | 27 | JUnit 5 | yes |
+| Application integration (API + web layer) | 39 | JUnit 5 + MockMvc | yes |
+| API automation (incl. 7 SOAP) | 50 | TestNG + REST Assured | yes |
+| UI automation | 18 | TestNG + Selenium 4 | yes |
+| BDD scenarios (14 API + 6 UI) | 20 | Cucumber 7 + TestNG | yes |
+| Smoke | 7 | Cypress | yes |
+| **Total** | **161** | | **161** |
+| Performance | 1 plan | JMeter | no — run manually, see [perf](perf/README.md) |
 
-The application uses JUnit 5 because that is the idiomatic Spring Boot stack; the automation modules
-use TestNG for its groups, data providers and parallel execution, which is what the QA tooling
-ecosystem is built around.
+All 161 run on every pull request across five CI jobs. Verified to pass **twice in a row against one
+running application instance**, which is the check that catches shared-state coupling between tests.
+
+The application uses JUnit 5 because that is the idiomatic Spring Boot stack; the automation modules use
+TestNG for its groups, data providers and parallel execution, which is what the QA tooling ecosystem is
+built around.
+
+## A note on the two CI-visible workflows
+
+`CI` is this project's pipeline. A second workflow named `Copilot` may also appear in the Actions tab:
+that is GitHub's own automated code review, enabled at the account level, and is not part of this
+repository.

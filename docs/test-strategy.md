@@ -32,7 +32,8 @@ The suites are layered so that a failure points at a cause rather than at a symp
 | Smoke | `cypress` | 7 | Running application via Cypress | Independent confirmation the console works |
 | Performance | `perf` | 1 plan | Running application | Throughput and latency trend, manual |
 
-**Total automated: 161 tests**, of which 155 run on every pull request.
+**Total automated: 161 tests**, all of which run on every pull request across the five CI jobs. The
+JMeter plan is the only automated artefact not in CI, and the reason is in section 9.
 
 ### Why the domain rules are tested three times over
 
