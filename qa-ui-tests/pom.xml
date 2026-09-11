@@ -20,6 +20,8 @@
   <properties>
     <ui.headless>true</ui.headless>
     <ui.screenshot.dir>${project.build.directory}/screenshots</ui.screenshot.dir>
+    <!-- Which TestNG groups to run: ui-smoke, ui-negative or ui-regression. -->
+    <ui.groups>ui-regression</ui.groups>
   </properties>
 
   <dependencies>
@@ -62,6 +64,11 @@
           </execution>
         </executions>
         <configuration>
+          <!--
+            Group selection goes through Failsafe's own parameter; suiteXmlFiles is unsupported from
+            3.6.0 onwards and is silently ignored.
+          -->
+          <groups>${ui.groups}</groups>
           <systemPropertyVariables>
             <app.base.url>${app.base.url}</app.base.url>
             <ui.headless>${ui.headless}</ui.headless>
