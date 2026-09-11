@@ -88,6 +88,23 @@
   </dependencyManagement>
 
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <!--
+            Retains method parameter names in the bytecode. Spring binds @PathVariable and
+            @RequestParam by parameter name, and without this flag the names are erased at compile
+            time and every annotated handler argument fails at runtime. The Spring Boot starter
+            parent sets this by default; this project imports the Boot BOM instead of inheriting
+            from that parent, so the flag has to be set here.
+          -->
+          <parameters>true</parameters>
+        </configuration>
+      </plugin>
+    </plugins>
+
     <pluginManagement>
       <plugins>
         <plugin>
