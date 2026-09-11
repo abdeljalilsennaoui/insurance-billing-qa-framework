@@ -114,3 +114,66 @@ jobs:
           name: app-log
           path: billing-app/target/app.log
           retention-days: 5
+
+  ui-tests:
+    name: UI automation (Selenium)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Install modules without running tests
+        run: mvn -B clean install -DskipITs -DskipTests
+
+      - name: Download application jar
+        uses: actions/download-artifact@v4
+        with:
+          name: billing-app-jar
+          path: billing-app/target
+
+      - name: Start application
+        run: scripts/start-app.sh
+
+      # Chrome is preinstalled on ubuntu-latest runners, and Selenium Manager resolves a matching
+      # chromedriver at runtime, so there is nothing to install or pin here. The suite is headless by
+      # default rather than by a CI-only override, so local and CI runs exercise the same mode.
+      - name: Run UI regression suite
+        run: mvn -B verify -pl qa-ui-tests
+
+      - name: Stop application
+        if: always()
+        run: scripts/stop-app.sh
+
+      - name: Upload UI test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-reports
+          path: qa-ui-tests/target/failsafe-reports/
+          retention-days: 5
+
+      # The screenshot of the moment a browser test failed is usually what explains it; by the time
+      # the job ends the browser is gone.
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-failure-screenshots
+          path: qa-ui-tests/target/screenshots/
+          retention-days: 5
+          if-no-files-found: ignore
+
+      - name: Upload application log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-log-ui
+          path: billing-app/target/app.log
+          retention-days: 5
