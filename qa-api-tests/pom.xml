@@ -49,6 +49,15 @@
     </dependency>
   </dependencies>
 
+  <properties>
+    <!--
+      Which TestNG groups to run. Defaults to the full regression set; override to run a narrower
+      slice, for example -Dapi.groups=smoke or -Dapi.groups=negative
+    -->
+    <api.groups>regression</api.groups>
+    <api.threads>4</api.threads>
+  </properties>
+
   <build>
     <plugins>
       <!--
@@ -67,6 +76,16 @@
           </execution>
         </executions>
         <configuration>
+          <!--
+            Group selection is done through Failsafe's own 'groups' parameter rather than a TestNG
+            suite XML. maven-failsafe-plugin 3.6.0 dropped support for suiteXmlFiles: it accepts the
+            parameter, warns that it is unsupported, and then ignores it, running every *IT class
+            instead. That silently turns a 'smoke' run into a full regression run, so the suite XMLs
+            were removed rather than left in the repository looking functional.
+          -->
+          <groups>${api.groups}</groups>
+          <parallel>methods</parallel>
+          <threadCount>${api.threads}</threadCount>
           <systemPropertyVariables>
             <app.base.url>${app.base.url}</app.base.url>
           </systemPropertyVariables>
