@@ -22,6 +22,12 @@
     <ui.screenshot.dir>${project.build.directory}/screenshots</ui.screenshot.dir>
     <!-- Which TestNG groups to run: ui-smoke, ui-negative or ui-regression. -->
     <ui.groups>ui-regression</ui.groups>
+    <!--
+      Where the documentation screenshots are written. Under docs/ rather than target/ because these
+      images are committed and referenced by docs/test-report.md, unlike the failure screenshots the
+      suite produces, which are build output.
+    -->
+    <docs.screenshot.dir>${project.basedir}/../docs/screenshots</docs.screenshot.dir>
   </properties>
 
   <dependencies>
@@ -52,6 +58,47 @@
 
   <build>
     <plugins>
+      <!--
+        Runs the documentation screenshot tool:
+
+          mvn -q -pl qa-ui-tests exec:java -Dexec.args=console
+          mvn -q -pl qa-ui-tests exec:java -Dexec.args=reports
+
+        Bound to no phase and never part of a build. Capturing screenshots needs a running
+        application and takes a browser session per page, and neither belongs in the path between a
+        developer and a compiled artifact.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>com.insurancebilling.qa.ui.docs.DocumentationScreenshots</mainClass>
+          <systemProperties>
+            <systemProperty>
+              <key>app.base.url</key>
+              <value>${app.base.url}</value>
+            </systemProperty>
+            <systemProperty>
+              <key>ui.headless</key>
+              <value>${ui.headless}</value>
+            </systemProperty>
+            <systemProperty>
+              <key>docs.screenshot.dir</key>
+              <value>${docs.screenshot.dir}</value>
+            </systemProperty>
+            <!--
+              exec:java runs in the Maven JVM, so relative paths resolve against the directory Maven
+              was started in. The module's own location is the only thing that reliably identifies
+              the repository root.
+            -->
+            <systemProperty>
+              <key>docs.repo.root</key>
+              <value>${project.basedir}/..</value>
+            </systemProperty>
+          </systemProperties>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>

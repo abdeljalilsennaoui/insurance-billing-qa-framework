@@ -16,6 +16,10 @@ surefire-reports/
 failsafe-reports/
 reports/
 screenshots/
+# ...except the documentation screenshots, which are evidence in docs/test-report.md and are meant to
+# show up in a diff when they change. The directory itself has to be re-included: git will not
+# un-ignore a file whose parent directory is excluded.
+!docs/screenshots/
 allure-results/
 allure-report/
 cucumber-reports/

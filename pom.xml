@@ -33,6 +33,7 @@
     <assertj.version>3.27.7</assertj.version>
     <slf4j.version>2.0.17</slf4j.version>
 
+    <exec.plugin.version>3.6.3</exec.plugin.version>
     <surefire.version>3.6.0</surefire.version>
     <jacoco.version>0.8.15</jacoco.version>
     <failsafe.version>3.6.0</failsafe.version>
@@ -127,6 +128,16 @@
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>${jacoco.version}</version>
+        </plugin>
+        <!--
+          Runs the documentation screenshot tool in qa-ui-tests. Pinned here rather than left to
+          Maven's latest-release resolution, which would make a build's behaviour depend on the day
+          it ran.
+        -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${exec.plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
