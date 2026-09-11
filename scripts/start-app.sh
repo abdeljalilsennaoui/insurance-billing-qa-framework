@@ -29,6 +29,21 @@ if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
   exit 0
 fi
 
+# Refuse to start when something else is already serving this port.
+#
+# Without this check the script is actively misleading: the new process fails to bind, dies, and the
+# health poll below is answered by the stale server, so the script reports success and the suites run
+# against an old build. That is how a green run can certify code that was never deployed. A loud
+# failure here is far cheaper than the confusion it prevents.
+if curl -sf "http://localhost:$PORT/actuator/health" > /dev/null 2>&1; then
+  echo "Something is already serving port $PORT, but it was not started by this script." >&2
+  if command -v lsof > /dev/null 2>&1; then
+    echo "Holder PID(s): $(lsof -ti:"$PORT" | tr '\n' ' ')" >&2
+  fi
+  echo "Stop it first (scripts/stop-app.sh, or kill the PID above) and try again." >&2
+  exit 1
+fi
+
 echo "Starting billing-app on port $PORT"
 # The QA test-support endpoints are switched on explicitly here. They default to off so that a
 # deployment which has not opted in cannot expose a route capable of wiping its data.
@@ -38,12 +53,18 @@ nohup java -jar "$JAR" \
   > "$LOG" 2>&1 &
 echo $! > "$PID_FILE"
 
+# Liveness is checked before health on each pass, deliberately. Checking health first means a single
+# early success ends the loop before the process has been examined at all, which is exactly how a dead
+# process gets reported as a healthy one.
 elapsed=0
-until curl -sf "http://localhost:$PORT/actuator/health" > /dev/null 2>&1; do
+while true; do
   if ! kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
     echo "Application exited during startup. Last 40 log lines:" >&2
     tail -40 "$LOG" >&2
     exit 1
+  fi
+  if curl -sf "http://localhost:$PORT/actuator/health" > /dev/null 2>&1; then
+    break
   fi
   if (( elapsed >= TIMEOUT_SECONDS )); then
     echo "Application did not become healthy within ${TIMEOUT_SECONDS}s. Last 40 log lines:" >&2
