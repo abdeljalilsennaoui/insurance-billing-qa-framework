@@ -6,6 +6,11 @@ build/
 !.mvn/wrapper/maven-wrapper.jar
 
 # Test and report output
+site/
+jacoco.exec
+jacoco-e2e.exec
+jacoco-merged.exec
+jacoco-agent.jar
 test-output/
 surefire-reports/
 failsafe-reports/
