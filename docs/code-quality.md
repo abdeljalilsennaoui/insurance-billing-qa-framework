@@ -14,9 +14,10 @@ branches, duplicated blocks, security hotspots. Codecov is the only one of the t
 about the change in front of a reviewer rather than about the project as a whole.
 
 > **Status: the Sonar analysis has never executed.** It needs a SonarQube Cloud project and a
-> `SONAR_TOKEN` secret, neither of which existed when this was written. What was and was not verified is
-> recorded in [the last section](#what-has-and-has-not-been-verified), and the workflow step carries the
-> same warning.
+> `SONAR_TOKEN` secret, neither of which existed when this was written, so the step skips itself. The
+> coverage merge and the Codecov upload have run in CI. What was and was not verified is recorded in
+> [the last section](#what-has-and-has-not-been-verified), and the workflow step carries the same
+> warning.
 
 ---
 
@@ -55,10 +56,14 @@ now obsolete: the suites already run, the agent costs them almost nothing, and t
 collects what they recorded. The change is in the workflow, and
 [`coverage.md`](coverage.md#what-ci-publishes) is updated to match.
 
-One honest caveat. CI's figure is fractionally below the local one, because the `test-support` group is
-excluded from CI — it wipes the database, so it cannot run beside anything else, and
-[`scripts/coverage.sh`](../scripts/coverage.sh) runs it last and alone. `TestSupportController.reset`
-therefore shows as uncovered in CI and covered locally.
+One honest caveat, with the measured size of it. CI reports **97.1%** line coverage where a local
+`scripts/coverage.sh` run reports 99.0%. Comparing the two reports class by class, the whole difference
+is a single file: `TestSupportController`, 7 of 16 lines in CI against 16 of 16 locally. The
+`test-support` group wipes the database, so it cannot run beside anything else and is excluded from CI;
+locally the script runs it last and alone.
+
+Nothing else differs — which also settles what the uninstrumented Cypress job costs: **zero measured
+lines**. Everything the smoke suite touches, the Selenium suite already covers.
 
 ---
 
@@ -179,7 +184,7 @@ this, or removing the badge lines until then.
 
 Following the rule this repository holds itself to: anything not executed says so.
 
-**Verified by running it:**
+**Verified by running it, locally and on a runner:**
 
 - `mvn -B validate` on every module with the Sonar properties in place — the POMs parse and
   `sonar.coverage.jacoco.xmlReportPaths` interpolates to the two absolute paths intended.
@@ -188,10 +193,17 @@ Following the rule this repository holds itself to: anything not executed says s
   `jacoco-e2e-api.exec`, `jacoco-e2e-ui.exec` and `jacoco-e2e.exec` present produces the same figures as
   the single-file merge — 99.0% line, 88.9% branch, 100% class.
 - `.github/workflows/ci.yml` parses as YAML with the expected jobs and step order.
+- **The pipeline itself.** A full run on a pull request: all five suite jobs green, the coverage job
+  downloading four execution files, merging them and rendering the report — 97.1% line, 88.9% branch,
+  100% class, matching the local figures class for class apart from the excluded reset tests.
+- **The Codecov upload**, which succeeded without a token (public repository, tokenless upload).
+- **The analysis step skipping cleanly when `SONAR_TOKEN` is absent**, rather than failing the job.
 
 **Not verified, because it cannot be without the accounts:**
 
 - The Sonar analysis itself. It has never run. Whether the quality gate passes, what the analysis finds,
-  and whether the organisation key matches are all open questions until step 4 above is done.
-- The Codecov upload. The action is wired and the report it points at exists; nothing has been sent.
-- The Codecov pull-request comment, which depends on the app being installed on the repository.
+  and whether the organisation and project keys match are all open questions until the setup above is
+  done.
+- The Codecov **pull-request comment**, which needs the Codecov GitHub app installed on the repository.
+  The upload succeeded; whether it produces a comment is a separate question.
+- Both README badges, which cannot resolve until the corresponding projects exist.

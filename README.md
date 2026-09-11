@@ -202,7 +202,8 @@ either never fire or fire at random, and a performance gate that fails at random
 | **Total** | **165** | | **163** |
 | Performance | 1 plan | JMeter | no — run manually, see [perf](perf/README.md) |
 
-163 of the 165 run on every pull request across five CI jobs. The two excluded are the `test-support`
+163 of the 165 run on every pull request across five CI jobs, with a sixth that runs no tests and
+publishes their merged coverage. The two excluded are the `test-support`
 reset tests, which wipe the database and therefore cannot run beside anything else; `scripts/coverage.sh`
 runs them last, on their own.
 

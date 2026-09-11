@@ -153,10 +153,11 @@ to run every suite a second time inside one job. That is true of the obvious app
 this one: the suites already run, attaching the agent costs them almost nothing, and the extra job only
 collects what they recorded.
 
-One difference from a local `scripts/coverage.sh` run remains. The `test-support` group is excluded from
-CI, because it wipes the database and cannot run beside anything else, so `TestSupportController.reset`
-reads as uncovered there and covered here. The numbers in this document are from a local run, which
-includes it.
+One difference from a local `scripts/coverage.sh` run remains, and it has been measured rather than
+estimated: CI reports **97.1%** line coverage against the 99.0% above. Compared class by class, the
+entire difference is `TestSupportController` — 7 of 16 lines in CI, 16 of 16 locally. The `test-support`
+group wipes the database, so it is excluded from CI and runs last and alone locally. The figures in this
+document are from a local run, which includes it.
 
 The tooling that consumes these reports — SonarQube Cloud, Codecov, and what each is and is not allowed
 to block — is described in [`code-quality.md`](code-quality.md).
