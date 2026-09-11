@@ -89,8 +89,10 @@ public class InvoiceDetailsPage extends BasePage {
       type("payment-reference-input", reference);
     }
 
-    click("submit-payment-button");
-    waitForFormOutcome();
+    // Held on to deliberately: its staleness is what proves the browser actually left this page.
+    WebElement submitButton = visible("submit-payment-button");
+    submitButton.click();
+    waitForPageReplacement(submitButton);
     return this;
   }
 
@@ -99,14 +101,25 @@ public class InvoiceDetailsPage extends BasePage {
   }
 
   /**
-   * Waits for the submission to resolve one way or the other.
+   * Waits until the submitted page has genuinely been replaced.
+   *
+   * <p>The obvious wait here is wrong, and was the first thing this suite got caught by: waiting for
+   * "the balance is displayed, or a banner is present" is satisfied by the page that is *already on
+   * screen*, because the balance is displayed there too. The wait returned immediately, the test read
+   * pre-submit values, and the next interaction hit a DOM the browser was in the middle of replacing,
+   * producing StaleElementReferenceException in whichever test happened to submit twice.
+   *
+   * <p>Waiting for staleness of an element from the submitted page fixes it at the root: an element
+   * goes stale only once the browser has actually discarded the document that contained it. This holds
+   * for both outcomes, since a success redirects and a rejection re-renders, and in both cases the old
+   * document is gone. Only then is it safe to wait for the new page to finish rendering.
+   *
+   * <p>No sleep and no retry loop: both would mask the race rather than remove it, and would leave the
+   * suite passing for timing reasons that could change on any machine.
    */
-  private void waitForFormOutcome() {
-    wait.until(
-        driver ->
-            !driver.findElements(testId("payment-success")).isEmpty()
-                || !driver.findElements(testId("payment-error")).isEmpty()
-                || !driver.findElements(testId("invoice-outstanding-balance")).isEmpty());
+  private void waitForPageReplacement(WebElement elementFromPreviousPage) {
+    wait.until(ExpectedConditions.stalenessOf(elementFromPreviousPage));
+    waitUntilLoaded();
   }
 
   public boolean hasSuccessBanner() {
