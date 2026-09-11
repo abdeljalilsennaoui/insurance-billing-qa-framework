@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invoices</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main>
+  <h1 data-testid="page-title">Invoices</h1>
+
+  <form method="get" th:action="@{/invoices}" class="filter-form">
+    <label for="status-filter">Filter by status</label>
+    <select id="status-filter" name="status" data-testid="status-filter">
+      <option value="">All statuses</option>
+      <option th:each="s : ${statuses}"
+              th:value="${s}"
+              th:text="${s}"
+              th:selected="${s == selectedStatus}"></option>
+    </select>
+    <button type="submit" data-testid="apply-filter-button">Apply</button>
+  </form>
+
+  <p th:if="${invoices.isEmpty()}" data-testid="no-invoices-message">
+    No invoices match the current filter.
+  </p>
+
+  <table th:unless="${invoices.isEmpty()}" data-testid="invoice-table">
+    <thead>
+    <tr>
+      <th>Invoice</th>
+      <th>Customer</th>
+      <th>Policy</th>
+      <th class="numeric">Total</th>
+      <th class="numeric">Outstanding</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="invoice : ${invoices}"
+        data-testid="invoice-row"
+        th:attr="data-invoice-number=${invoice.invoiceNumber}">
+      <td data-testid="invoice-number" th:text="${invoice.invoiceNumber}"></td>
+      <td data-testid="invoice-customer" th:text="${invoice.customerName}"></td>
+      <td data-testid="invoice-policy" th:text="${invoice.policyNumber}"></td>
+      <td class="numeric" data-testid="invoice-total"
+          th:text="${#numbers.formatDecimal(invoice.totalAmount, 1, 2)}"></td>
+      <td class="numeric" data-testid="invoice-balance"
+          th:text="${#numbers.formatDecimal(invoice.outstandingBalance, 1, 2)}"></td>
+      <td>
+        <span class="status" data-testid="invoice-status"
+              th:classappend="'status-' + ${invoice.status}"
+              th:text="${invoice.status}"></span>
+        <span th:if="${invoice.overdue}" class="overdue-flag" data-testid="invoice-overdue-flag">
+          overdue
+        </span>
+      </td>
+      <td>
+        <a data-testid="invoice-link"
+           th:href="@{/invoices/{id}(id=${invoice.id})}">View</a>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</main>
+</body>
+</html>

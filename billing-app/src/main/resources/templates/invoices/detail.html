@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="'Invoice ' + ${invoice.invoiceNumber}">Invoice</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main>
+  <a th:href="@{/invoices}" data-testid="back-to-list-link">Back to invoices</a>
+
+  <h1 data-testid="page-title">
+    Invoice <span data-testid="invoice-number" th:text="${invoice.invoiceNumber}"></span>
+  </h1>
+
+  <div th:if="${paymentSuccess}" class="banner success" data-testid="payment-success"
+       th:text="${paymentSuccess}"></div>
+  <div th:if="${paymentError}" class="banner error" data-testid="payment-error"
+       th:text="${paymentError}"></div>
+
+  <section class="summary">
+    <dl>
+      <dt>Customer</dt>
+      <dd data-testid="invoice-customer" th:text="${invoice.customerName}"></dd>
+
+      <dt>Policy</dt>
+      <dd data-testid="invoice-policy" th:text="${invoice.policyNumber}"></dd>
+
+      <dt>Status</dt>
+      <dd>
+        <span class="status" data-testid="invoice-status"
+              th:classappend="'status-' + ${invoice.status}"
+              th:text="${invoice.status}"></span>
+        <span th:if="${invoice.overdue}" class="overdue-flag" data-testid="invoice-overdue-flag">
+          overdue
+        </span>
+      </dd>
+
+      <dt>Issued</dt>
+      <dd data-testid="invoice-issue-date" th:text="${invoice.issueDate}"></dd>
+
+      <dt>Due</dt>
+      <dd data-testid="invoice-due-date" th:text="${invoice.dueDate}"></dd>
+
+      <dt>Total</dt>
+      <dd class="numeric" data-testid="invoice-total"
+          th:text="${#numbers.formatDecimal(invoice.totalAmount, 1, 2)}"></dd>
+
+      <dt>Paid</dt>
+      <dd class="numeric" data-testid="invoice-amount-paid"
+          th:text="${#numbers.formatDecimal(invoice.amountPaid, 1, 2)}"></dd>
+
+      <dt>Outstanding</dt>
+      <dd class="numeric emphasis" data-testid="invoice-outstanding-balance"
+          th:text="${#numbers.formatDecimal(invoice.outstandingBalance, 1, 2)}"></dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Payment history</h2>
+    <p th:if="${invoice.payments.isEmpty()}" data-testid="no-payments-message">
+      No payments have been recorded against this invoice.
+    </p>
+    <table th:unless="${invoice.payments.isEmpty()}" data-testid="payment-table">
+      <thead>
+      <tr>
+        <th class="numeric">Amount</th>
+        <th>Method</th>
+        <th>Reference</th>
+        <th>Received</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="payment : ${invoice.payments}" data-testid="payment-row">
+        <td class="numeric" data-testid="payment-amount"
+            th:text="${#numbers.formatDecimal(payment.amount, 1, 2)}"></td>
+        <td data-testid="payment-method" th:text="${payment.method}"></td>
+        <td data-testid="payment-reference" th:text="${payment.reference}"></td>
+        <td data-testid="payment-received-at" th:text="${payment.receivedAt}"></td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Record a payment</h2>
+
+    <p th:if="${invoice.outstandingBalance.signum() == 0}" data-testid="fully-paid-message">
+      This invoice is settled in full.
+    </p>
+    <p th:if="${invoice.status.name() == 'CANCELLED'}" data-testid="cancelled-message">
+      This invoice is cancelled.
+    </p>
+
+    <form method="post"
+          th:action="@{/invoices/{id}/payments(id=${invoice.id})}"
+          th:object="${paymentForm}"
+          data-testid="payment-form">
+      <div class="field">
+        <label for="amount">Amount</label>
+        <input type="text" id="amount" th:field="*{amount}"
+               data-testid="payment-amount-input" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="method">Method</label>
+        <select id="method" th:field="*{method}" data-testid="payment-method-select">
+          <option th:each="m : ${methods}" th:value="${m}" th:text="${m}"></option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="reference">Reference</label>
+        <input type="text" id="reference" th:field="*{reference}"
+               data-testid="payment-reference-input" autocomplete="off">
+      </div>
+      <button type="submit" data-testid="submit-payment-button">Record payment</button>
+    </form>
+  </section>
+</main>
+</body>
+</html>
