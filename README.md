@@ -135,6 +135,24 @@ failure, which is what is actually needed to diagnose a red run.
 CI uses the same `scripts/start-app.sh` a developer runs locally, so "works on my machine" and "works
 in CI" cannot quietly diverge.
 
+### Jenkins
+
+[`Jenkinsfile`](Jenkinsfile) is a declarative pipeline covering the same stages, provided because
+Jenkins is still the dominant CI server in enterprise QA environments.
+
+**It is not executed for this repository.** GitHub Actions is the pipeline that actually runs and gates
+merges. The Jenkinsfile is written against the real project layout and the real Maven commands, but no
+Jenkins controller was available to run it, so it is a reference implementation rather than a verified
+one. Anyone adopting it should expect to adjust the agent definition, the JDK and Maven tool names, and
+plugin availability for their own controller.
+
+### Performance testing
+
+The JMeter plan in [`perf/`](perf/README.md) is run manually, not in CI, and
+[`perf/README.md`](perf/README.md) records the measured numbers together with the reasons they are not a
+capacity measurement. A shared runner's CPU is too variable for response-time thresholds: they would
+either never fire or fire at random, and a performance gate that fails at random gets ignored.
+
 ## Test counts
 
 | Suite | Tests | Runner |
