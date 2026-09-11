@@ -1,0 +1,14 @@
+{
+  "name": "insurance-billing-cypress-smoke",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cypress smoke suite for the insurance billing console.",
+  "scripts": {
+    "test": "cypress run",
+    "test:headed": "cypress run --headed",
+    "open": "cypress open"
+  },
+  "devDependencies": {
+    "cypress": "^15.5.0"
+  }
+}

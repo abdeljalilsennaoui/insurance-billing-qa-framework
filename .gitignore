@@ -25,6 +25,9 @@ node_modules/
 cypress/videos/
 cypress/screenshots/
 cypress/downloads/
+cypress/cypress/videos/
+cypress/cypress/screenshots/
+cypress/cypress/downloads/
 
 # Environment and secrets
 .env
