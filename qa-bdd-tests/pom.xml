@@ -31,6 +31,17 @@
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-testng</artifactId>
     </dependency>
+    <!--
+      Provides the dependency injection that gives each scenario a fresh ScenarioContext. Without an
+      object factory, shared state would have to live in static fields, which is the usual way a BDD
+      suite becomes order-dependent and impossible to parallelise.
+    -->
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-picocontainer</artifactId>
+      <version>${cucumber.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>com.insurancebilling</groupId>
       <artifactId>qa-api-tests</artifactId>
@@ -73,7 +84,7 @@
           <systemPropertyVariables>
             <app.base.url>${app.base.url}</app.base.url>
             <ui.headless>${ui.headless}</ui.headless>
-            <cucumber.filter.tags>${cucumber.filter.tags}</cucumber.filter.tags>
+            <ui.screenshot.dir>${project.build.directory}/screenshots</ui.screenshot.dir>
           </systemPropertyVariables>
         </configuration>
       </plugin>

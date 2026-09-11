@@ -177,3 +177,55 @@ jobs:
           name: app-log-ui
           path: billing-app/target/app.log
           retention-days: 5
+
+  bdd-tests:
+    name: BDD scenarios (Cucumber)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Install modules without running tests
+        run: mvn -B clean install -DskipITs -DskipTests
+
+      - name: Download application jar
+        uses: actions/download-artifact@v4
+        with:
+          name: billing-app-jar
+          path: billing-app/target
+
+      - name: Start application
+        run: scripts/start-app.sh
+
+      - name: Run Cucumber scenarios
+        run: mvn -B verify -pl qa-bdd-tests
+
+      - name: Stop application
+        if: always()
+        run: scripts/stop-app.sh
+
+      # The HTML reports are the readable artefact for these suites: they show which scenario and which
+      # step failed, in business language, without anyone reading a stack trace.
+      - name: Upload Cucumber reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-reports
+          path: qa-bdd-tests/target/cucumber-reports/
+          retention-days: 5
+
+      - name: Upload scenario failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdd-failure-screenshots
+          path: qa-bdd-tests/target/screenshots/
+          retention-days: 5
+          if-no-files-found: ignore
