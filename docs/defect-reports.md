@@ -1,6 +1,6 @@
 # Defect reports
 
-Nine defects found while building and stabilising this project. Every one was actually encountered —
+Ten defects found while building and stabilising this project. Every one was actually encountered —
 none is an illustrative example written to fill a template. Each is linked to the commit that fixed it,
 so the claim can be checked against the history.
 
@@ -20,6 +20,7 @@ or testing the wrong thing.
 | DEF-007 | Start script reports healthy for a server it did not start | High | SOAP suite investigation | `c98a7d6` |
 | DEF-008 | Cucumber hooks never registered | High | BDD UI scenarios | in PR #33 |
 | DEF-009 | SOAP endpoint rejects `application/xml` | Medium | SOAP suite | in PR #35 |
+| DEF-010 | Surefire claims an `*IT` class and runs it without an application | Medium | Coverage work | in PR #42 |
 
 ---
 
@@ -295,11 +296,37 @@ GPath *parameter reference*, not a path. Fixed by naming the path from the docum
 
 ---
 
-## Observations across the nine
+## DEF-010 — Surefire claims an `*IT` class and runs it without an application
 
-- **Four of nine were found by automated tests** (DEF-001, DEF-002, DEF-006, DEF-008), two by **manual
-  exploratory checking** (DEF-003, DEF-004), and three only by **deliberately verifying the tooling did
-  what it was told** (DEF-005, DEF-007, DEF-009).
+**Severity:** Medium · **Priority:** Immediate · **Component:** Test infrastructure
+
+**Steps to reproduce**
+
+1. Name an integration test `TestSupportResetIT`, extending `BaseApiTest`.
+2. Run `mvn clean install -DskipITs` with no application running.
+
+**Expected:** the class is a Failsafe integration test; `-DskipITs` excludes it and the build passes.
+
+**Actual:** `BUILD FAILURE`. Surefire ran it during the `test` phase:
+`Running com.insurancebilling.qa.api.TestSupportResetIT` → `java.net.ConnectException: Connection
+refused` in the suite-level health check.
+
+**Root cause:** Surefire's default includes are `Test*.java`, `*Test.java`, `*Tests.java` and
+`*TestCase.java`. `TestSupportResetIT` matches the **first** pattern. Ending in `IT` is not enough to keep
+a class out of Surefire's hands — the name must also avoid starting with `Test`.
+
+**Resolution:** renamed to `ResetEndpointIT`, with the reason recorded in the class Javadoc so the next
+person naming a test-support class does not rediscover it.
+
+**Why it is worth recording:** the failure looked like an environment problem — "connection refused, the
+app must not be up" — when the real cause was that a file name matched a pattern. The misleading part is
+that the class was correctly suffixed for Failsafe, so the naming looked deliberate and correct.
+
+## Observations across the ten
+
+- **Four of ten were found by automated tests** (DEF-001, DEF-002, DEF-006, DEF-008), two by **manual
+  exploratory checking** (DEF-003, DEF-004), three only by **deliberately verifying the tooling did what
+  it was told** (DEF-005, DEF-007, DEF-009), and one by **adding coverage measurement** (DEF-010).
 - **That middle group is the argument for manual smoke checks.** DEF-003 and DEF-004 were both found by
   driving the application with `curl` before writing any automation. DEF-004 in particular would
   otherwise have become intermittent CI flakiness blamed on the tests.

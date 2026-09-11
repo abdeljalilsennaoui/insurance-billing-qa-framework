@@ -73,10 +73,15 @@ mvn -B clean install -DskipITs
 mvn -B verify -pl qa-api-tests
 
 # Narrower slices by TestNG group
-mvn -B verify -pl qa-api-tests -Dapi.groups=smoke      # 6 tests, critical path
-mvn -B verify -pl qa-api-tests -Dapi.groups=negative   # 32 rejection scenarios
-mvn -B verify -pl qa-api-tests -Dapi.groups=regression # 50 tests, full coverage
-mvn -B verify -pl qa-api-tests -Dapi.groups=soap       # 7 SOAP tests
+mvn -B verify -pl qa-api-tests -Dapi.groups=smoke        # 7 tests, critical path
+mvn -B verify -pl qa-api-tests -Dapi.groups=negative     # 33 rejection scenarios
+mvn -B verify -pl qa-api-tests -Dapi.groups=regression   # 52 tests, full coverage (the CI default)
+mvn -B verify -pl qa-api-tests -Dapi.groups=soap         # 7 SOAP tests
+mvn -B verify -pl qa-api-tests -Dapi.groups=test-support # 2 tests — MUST run alone, see below
+
+# The test-support group resets the database, so it is excluded from every other group and from CI's
+# default run. Running it alongside the parallel regression suite would delete fixtures other tests
+# were using, and they would fail for reasons unrelated to what they check.
 
 # Point any suite at a different environment
 mvn -B verify -pl qa-api-tests -Dapp.base.url=http://localhost:9090
@@ -168,6 +173,7 @@ either never fire or fire at random, and a performance gate that fails at random
 | [Defect reports](docs/defect-reports.md) | The 9 defects found during development, each linked to its fixing commit |
 | [Agile workflow](docs/agile-workflow.md) | How the work was run, and how it maps to Jira and Zephyr |
 | [Performance results](perf/README.md) | Measured JMeter numbers and why they are not a capacity claim |
+| [Code coverage](docs/coverage.md) | Line and branch coverage, how black-box suites are measured, every remaining gap named |
 | [Interview guide](docs/interview-guide.md) | Architecture walkthroughs by file path, with the uncomfortable questions answered |
 
 ## Test counts
@@ -176,19 +182,49 @@ either never fire or fire at random, and a performance gate that fails at random
 |---|---:|---|---|
 | Domain unit | 27 | JUnit 5 | yes |
 | Application integration (API + web layer) | 39 | JUnit 5 + MockMvc | yes |
-| API automation (incl. 7 SOAP) | 50 | TestNG + REST Assured | yes |
+| API automation (incl. 7 SOAP) | 52 | TestNG + REST Assured | yes |
 | UI automation | 18 | TestNG + Selenium 4 | yes |
 | BDD scenarios (14 API + 6 UI) | 20 | Cucumber 7 + TestNG | yes |
 | Smoke | 7 | Cypress | yes |
-| **Total** | **161** | | **161** |
+| Reset endpoint (`test-support` group) | 2 | TestNG + REST Assured | no — must run alone |
+| **Total** | **165** | | **163** |
 | Performance | 1 plan | JMeter | no — run manually, see [perf](perf/README.md) |
 
-All 161 run on every pull request across five CI jobs. Verified to pass **twice in a row against one
-running application instance**, which is the check that catches shared-state coupling between tests.
+163 of the 165 run on every pull request across five CI jobs. The two excluded are the `test-support`
+reset tests, which wipe the database and therefore cannot run beside anything else; `scripts/coverage.sh`
+runs them last, on their own.
+
+Verified to pass **twice in a row against one running application instance**, which is the check that
+catches shared-state coupling between tests.
 
 The application uses JUnit 5 because that is the idiomatic Spring Boot stack; the automation modules use
 TestNG for its groups, data providers and parallel execution, which is what the QA tooling ecosystem is
 built around.
+
+## Code coverage
+
+```bash
+mvn -B clean install -DskipITs     # in-process coverage, automatic
+open billing-app/target/site/jacoco/index.html
+
+./scripts/coverage.sh              # full stack, including the black-box suites
+open billing-app/target/site/jacoco-full/index.html
+```
+
+| Metric | In-process | Full-stack |
+|---|---|---|
+| Line | 91.0% | **99.0%** |
+| Branch | 88.9% | **88.9%** |
+| Class | 95.2% | **100%** |
+
+The two columns differ because the API, UI and BDD suites drive the application in a **separate JVM**, so
+an ordinary in-process coverage run sees nothing of what they exercise — the SOAP package reads 44%
+in-process and 94% full-stack. `scripts/coverage.sh` attaches the JaCoCo agent to the application process
+and merges the execution data.
+
+Branch coverage is the lower, more honest figure, and every one of the six missed branches is accounted
+for individually in [docs/coverage.md](docs/coverage.md). There is deliberately **no coverage gate**: a
+threshold set before seeing the numbers is arbitrary, and one set to match them is decoration.
 
 ## A note on the two CI-visible workflows
 

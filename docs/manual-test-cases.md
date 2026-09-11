@@ -336,4 +336,4 @@ Cases kept manual, with the reason:
 | TC-019 — Console is legible at 1280×720 and 1920×1080 | No viewport assertions exist. Visual judgement, low risk for a server-rendered table. |
 | TC-020 — H2 console at `/h2-console` is reachable for debugging | A development convenience, not product behaviour. |
 | TC-021 — Application log contains no stack traces after a clean suite run | Checked by reading the log; asserting on log contents would be brittle. |
-| TC-022 — Reset endpoint is absent when `qa.test-support.enabled` is false | Verified by starting without the flag and confirming `404`. Automating it would need a second application context with different properties, which is more machinery than the risk warrants. |
+| TC-022 — Reset endpoint is absent when `qa.test-support.enabled` is false | The *absence* case stays manual: automating it needs a second application context with different properties, which is more machinery than the risk warrants. The endpoint's **behaviour** when enabled is now automated in `ResetEndpointIT`, after coverage showed it at zero lines covered. |

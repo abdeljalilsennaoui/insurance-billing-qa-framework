@@ -4,7 +4,7 @@ Maps each requirement to its manual test case and to the automated tests that co
 and method name. Every name below was taken from the source, not from memory; they can be checked with
 `grep -rn "<methodName>" .`
 
-**Coverage summary:** 21 requirements, all automated at least once. 9 are covered at four or more
+**Coverage summary:** 23 requirements, all automated at least once. 9 are covered at four or more
 levels; these are the critical money-handling rules.
 
 Level abbreviations: **U** domain unit · **I** application integration · **A** API automation ·
@@ -293,6 +293,29 @@ meaningful.
 
 **Manual:** TC-018 · **Note:** `soapAndRestReportTheSameBalanceForTheSameInvoice` exists specifically to
 prove the two protocols cannot disagree.
+
+---
+
+### REQ-22 — A policy can be retrieved by id
+
+| Level | Class | Method |
+|---|---|---|
+| A | `CustomerPolicyApiIT` | `aPolicyCanBeRetrievedById`, `anUnknownPolicyIsNotFound` |
+
+**Manual:** TC-016 · **Note:** added after a coverage report showed `PolicyController.get` was never
+called by any test.
+
+---
+
+### REQ-23 — The QA reset endpoint restores the seeded baseline
+
+| Level | Class | Method |
+|---|---|---|
+| A | `ResetEndpointIT` | `resetRestoresTheSeededBaseline`, `theSeededBaselineCoversEveryInvoiceState` |
+
+**Manual:** TC-022 · **Note:** added after a coverage report showed `TestSupportController.reset` at zero
+lines covered. Runs in the `test-support` group, excluded from every other group because it deletes all
+data.
 
 ---
 

@@ -26,14 +26,18 @@ The suites are layered so that a failure points at a cause rather than at a symp
 |---|---|---|---|---|
 | Domain unit | `billing-app/src/test/java/.../domain/` | 27 | Nothing — plain objects | Billing rules and balance arithmetic |
 | Application integration | `billing-app/src/test/java/.../api/` | 39 | Spring context + MockMvc | HTTP contract, status codes, error shape, rendered templates |
-| API automation | `qa-api-tests` | 50 | Running application over HTTP | The published contract as a client sees it |
+| API automation | `qa-api-tests` | 54 | Running application over HTTP | The published contract as a client sees it |
 | UI automation | `qa-ui-tests` | 18 | Running application via Chrome | Browser journeys through the console |
 | BDD | `qa-bdd-tests` | 20 | Running application (API + Chrome) | Billing rules expressed as readable specifications |
 | Smoke | `cypress` | 7 | Running application via Cypress | Independent confirmation the console works |
 | Performance | `perf` | 1 plan | Running application | Throughput and latency trend, manual |
 
-**Total automated: 161 tests**, all of which run on every pull request across the five CI jobs. The
-JMeter plan is the only automated artefact not in CI, and the reason is in section 9.
+**Total automated: 165 tests**, of which 163 run on every pull request across the five CI jobs.
+
+Two are excluded deliberately: the `test-support` group exercises the database reset endpoint, and running
+it beside the parallel regression suite would delete fixtures other tests were mid-way through using,
+producing failures in innocent tests. It runs on its own. The JMeter plan is the other automated artefact
+outside CI; see section 9.
 
 ### Why the domain rules are tested three times over
 
@@ -58,14 +62,14 @@ The intended shape holds — many fast unit tests, fewer integration tests, fewe
          7  Cypress smoke          slowest, narrowest
         18  Selenium UI
         20  BDD scenarios
-        50  API automation
+        54  API automation
         39  Application integration
         27  Domain unit            fastest, broadest
 ```
 
 Two honest departures:
 
-1. **The middle is heavier than the classic pyramid.** 89 integration-and-API tests against 27 unit
+1. **The middle is heavier than the classic pyramid.** 93 integration-and-API tests against 27 unit
    tests. This is deliberate: the product's risk is concentrated in the HTTP contract (the 400 vs 422
    distinction, the error codes) rather than in algorithmic complexity. Testing where the risk is
    beats matching a diagram.
