@@ -8,6 +8,7 @@ import com.insurancebilling.domain.PaymentMethod;
 import com.insurancebilling.domain.PaymentRejectedException;
 import com.insurancebilling.service.InvoiceService;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import com.insurancebilling.service.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -32,20 +33,25 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  *
  * <p>A successful payment redirects rather than rendering directly, so a browser refresh after paying
  * cannot resubmit the payment.
+ *
+ * <p>The console reads the business date from the same {@link Clock} as the REST API, so the two can
+ * never disagree about whether an invoice is overdue.
  */
 @Controller
 @RequestMapping("/invoices")
 public class InvoiceWebController {
 
   private final InvoiceService invoices;
+  private final Clock clock;
 
-  public InvoiceWebController(InvoiceService invoices) {
+  public InvoiceWebController(InvoiceService invoices, Clock clock) {
     this.invoices = invoices;
+    this.clock = clock;
   }
 
   @GetMapping
   public String list(@RequestParam(required = false) InvoiceStatus status, Model model) {
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(clock);
     model.addAttribute(
         "invoices",
         invoices.findAll(status).stream().map(invoice -> InvoiceResponse.from(invoice, today)).toList());
@@ -118,7 +124,7 @@ public class InvoiceWebController {
   }
 
   private String renderDetail(Long id, PaymentForm form, Model model) {
-    model.addAttribute("invoice", InvoiceResponse.from(invoices.findById(id), LocalDate.now()));
+    model.addAttribute("invoice", InvoiceResponse.from(invoices.findById(id), LocalDate.now(clock)));
     model.addAttribute("paymentForm", form);
     model.addAttribute("methods", PaymentMethod.values());
     return "invoices/detail";

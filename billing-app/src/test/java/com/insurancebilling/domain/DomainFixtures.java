@@ -1,6 +1,7 @@
 package com.insurancebilling.domain;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
 /**
@@ -12,6 +13,16 @@ import java.time.LocalDate;
 final class DomainFixtures {
 
   private DomainFixtures() {}
+
+  /**
+   * The instant every fixture payment is recorded at.
+   *
+   * <p>Fixed rather than {@code Instant.now()}: {@link Invoice#applyPayment} takes the receipt instant
+   * as an argument, and a test that passed it wall-clock time would be asserting against a value it
+   * could not name. The payment list keeps insertion order in memory, so several payments sharing this
+   * instant do not disturb the ordering assertions.
+   */
+  static final Instant RECEIVED_AT = Instant.parse("2026-01-14T15:00:00Z");
 
   static BigDecimal money(String amount) {
     return new BigDecimal(amount);

@@ -15,6 +15,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,10 +89,15 @@ public class Invoice {
    * overpayment comparison. A caller sending {@code -50.00} against a cancelled invoice is told the
    * amount is invalid, because that is the problem it can fix without further information.
    *
+   * <p>{@code receivedAt} is a parameter for the same reason {@link #isOverdue} takes {@code asOf}:
+   * the entity states the rules, the caller states the time. The application supplies it from the
+   * configured business clock.
+   *
    * @return the recorded payment
    * @throws PaymentRejectedException if any billing rule refuses the payment
    */
-  public Payment applyPayment(BigDecimal amount, PaymentMethod method, String reference) {
+  public Payment applyPayment(
+      BigDecimal amount, PaymentMethod method, String reference, Instant receivedAt) {
     if (!Money.isPositive(amount)) {
       throw new PaymentRejectedException(
           PaymentRejectionReason.AMOUNT_NOT_POSITIVE,
@@ -134,7 +140,7 @@ public class Invoice {
               + getOutstandingBalance().toPlainString());
     }
 
-    Payment payment = new Payment(this, normalised, method, reference);
+    Payment payment = new Payment(this, normalised, method, reference, receivedAt);
     payments.add(payment);
     refreshStatus();
     return payment;
@@ -167,7 +173,9 @@ public class Invoice {
    * True when the due date has passed and the invoice is neither settled nor cancelled.
    *
    * <p>Takes the reference date as an argument rather than calling {@code LocalDate.now()} so the
-   * behaviour is testable without freezing the system clock.
+   * behaviour is testable without freezing the system clock. Callers read that date from the
+   * application's business clock, which is built from a configured zone rather than the host's — the
+   * entity was always clean here, and DEF-012 was entirely about who supplied this argument.
    */
   public boolean isOverdue(LocalDate asOf) {
     return status != InvoiceStatus.CANCELLED && !isSettled() && dueDate.isBefore(asOf);

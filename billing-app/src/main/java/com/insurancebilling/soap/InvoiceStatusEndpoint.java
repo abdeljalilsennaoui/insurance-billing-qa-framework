@@ -5,6 +5,7 @@ import com.insurancebilling.repository.InvoiceRepository;
 import com.insurancebilling.soap.generated.GetInvoiceStatusRequest;
 import com.insurancebilling.soap.generated.GetInvoiceStatusResponse;
 import com.insurancebilling.soap.generated.InvoiceStatus;
+import java.time.Clock;
 import java.time.LocalDate;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeConstants;
@@ -24,7 +25,8 @@ import org.springframework.ws.server.endpoint.annotation.ResponsePayload;
  * being reimplemented behind a second protocol that could diverge from the first.
  *
  * <p>Reuses the same repository and the same derived figures as the REST API, so the two protocols can
- * never report different balances for the same invoice.
+ * never report different balances for the same invoice — and, since DEF-012, the same business clock,
+ * so they cannot report different overdue flags either.
  */
 @Endpoint
 public class InvoiceStatusEndpoint {
@@ -32,9 +34,11 @@ public class InvoiceStatusEndpoint {
   private static final String NAMESPACE = "http://insurancebilling.com/billing/invoice-status";
 
   private final InvoiceRepository invoices;
+  private final Clock clock;
 
-  public InvoiceStatusEndpoint(InvoiceRepository invoices) {
+  public InvoiceStatusEndpoint(InvoiceRepository invoices, Clock clock) {
     this.invoices = invoices;
+    this.clock = clock;
   }
 
   @PayloadRoot(namespace = NAMESPACE, localPart = "GetInvoiceStatusRequest")
@@ -52,7 +56,7 @@ public class InvoiceStatusEndpoint {
     response.setTotalAmount(invoice.getTotalAmount());
     response.setAmountPaid(invoice.getAmountPaid());
     response.setOutstandingBalance(invoice.getOutstandingBalance());
-    response.setOverdue(invoice.isOverdue(LocalDate.now()));
+    response.setOverdue(invoice.isOverdue(LocalDate.now(clock)));
     response.setDueDate(toXmlDate(invoice.getDueDate()));
     return response;
   }

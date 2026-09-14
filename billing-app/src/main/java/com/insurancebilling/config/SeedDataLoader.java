@@ -8,6 +8,7 @@ import com.insurancebilling.domain.PolicyStatus;
 import com.insurancebilling.domain.PolicyType;
 import com.insurancebilling.repository.CustomerRepository;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Every seeded record uses a fixed {@code SEED-} reference and a date expressed relative to the day
  * the application starts, so the data set is identical on every run without being pinned to calendar
  * dates that would silently turn an invoice overdue over time.
+ *
+ * <p>"The day the application starts" is the date in the configured business zone, read from the
+ * injected {@link Clock}. It has to be the same zone the overdue rule is evaluated in: a baseline
+ * built against one zone and judged against another would put the seeded invoices a day out of step
+ * with their own documented states for part of every day. See DEF-012.
  *
  * <p>Seeded data exists for manual exploration, for read-only scenarios, and for the Cypress smoke
  * suite. Any scenario that <em>mutates</em> data creates its own records through the API instead: the
@@ -69,9 +75,11 @@ public class SeedDataLoader {
   public static class SeedDataWriter {
 
     private final CustomerRepository customers;
+    private final Clock clock;
 
-    public SeedDataWriter(CustomerRepository customers) {
+    public SeedDataWriter(CustomerRepository customers, Clock clock) {
       this.customers = customers;
+      this.clock = clock;
     }
 
     @Transactional
@@ -79,7 +87,7 @@ public class SeedDataLoader {
       if (customers.count() > 0) {
         return;
       }
-      LocalDate today = LocalDate.now();
+      LocalDate today = LocalDate.now(clock);
 
       Customer alice = new Customer("Alice", "Tremblay", "alice.tremblay@example.com");
       Customer bruno = new Customer("Bruno", "Lavoie", "bruno.lavoie@example.com");
@@ -108,13 +116,16 @@ public class SeedDataLoader {
       Invoice partiallyPaid =
           seedInvoice("SEED-INV-002", "360.00", today.minusDays(40), today.plusDays(10));
       autoPolicy.addInvoice(partiallyPaid);
-      partiallyPaid.applyPayment(new BigDecimal("90.00"), PaymentMethod.DIRECT_DEBIT, "SEED-PAY-001");
-      partiallyPaid.applyPayment(new BigDecimal("90.00"), PaymentMethod.DIRECT_DEBIT, "SEED-PAY-002");
+      partiallyPaid.applyPayment(
+          new BigDecimal("90.00"), PaymentMethod.DIRECT_DEBIT, "SEED-PAY-001", clock.instant());
+      partiallyPaid.applyPayment(
+          new BigDecimal("90.00"), PaymentMethod.DIRECT_DEBIT, "SEED-PAY-002", clock.instant());
 
       // Settled in full.
       Invoice paid = seedInvoice("SEED-INV-003", "480.00", today.minusDays(50), today.minusDays(20));
       homePolicy.addInvoice(paid);
-      paid.applyPayment(new BigDecimal("480.00"), PaymentMethod.BANK_TRANSFER, "SEED-PAY-003");
+      paid.applyPayment(
+          new BigDecimal("480.00"), PaymentMethod.BANK_TRANSFER, "SEED-PAY-003", clock.instant());
 
       // Past its due date with nothing paid: becomes OVERDUE on the first listing.
       Invoice overdue =

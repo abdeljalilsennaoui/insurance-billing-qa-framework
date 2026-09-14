@@ -1,5 +1,6 @@
 package com.insurancebilling.domain;
 
+import static com.insurancebilling.domain.DomainFixtures.RECEIVED_AT;
 import static com.insurancebilling.domain.DomainFixtures.invoiceOnActivePolicy;
 import static com.insurancebilling.domain.DomainFixtures.money;
 import static com.insurancebilling.domain.DomainFixtures.overdueInvoice;
@@ -33,7 +34,7 @@ class InvoiceBalanceTest {
   void partialPaymentReducesBalance() {
     Invoice invoice = invoiceOnActivePolicy("450.00");
 
-    invoice.applyPayment(money("150.00"), PaymentMethod.CARD, "REF-1");
+    invoice.applyPayment(money("150.00"), PaymentMethod.CARD, "REF-1", RECEIVED_AT);
 
     assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.PARTIALLY_PAID);
     assertThat(invoice.getAmountPaid()).isEqualByComparingTo("150.00");
@@ -46,7 +47,7 @@ class InvoiceBalanceTest {
   void fullPaymentSettlesInvoice() {
     Invoice invoice = invoiceOnActivePolicy("450.00");
 
-    invoice.applyPayment(money("450.00"), PaymentMethod.BANK_TRANSFER, "REF-1");
+    invoice.applyPayment(money("450.00"), PaymentMethod.BANK_TRANSFER, "REF-1", RECEIVED_AT);
 
     assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.PAID);
     assertThat(invoice.getOutstandingBalance()).isEqualByComparingTo("0.00");
@@ -58,9 +59,9 @@ class InvoiceBalanceTest {
   void sequentialPartialPaymentsSettleInvoiceExactly() {
     Invoice invoice = invoiceOnActivePolicy("100.00");
 
-    invoice.applyPayment(money("33.33"), PaymentMethod.CARD, "REF-1");
-    invoice.applyPayment(money("33.33"), PaymentMethod.CARD, "REF-2");
-    invoice.applyPayment(money("33.34"), PaymentMethod.CARD, "REF-3");
+    invoice.applyPayment(money("33.33"), PaymentMethod.CARD, "REF-1", RECEIVED_AT);
+    invoice.applyPayment(money("33.33"), PaymentMethod.CARD, "REF-2", RECEIVED_AT);
+    invoice.applyPayment(money("33.34"), PaymentMethod.CARD, "REF-3", RECEIVED_AT);
 
     assertThat(invoice.getAmountPaid()).isEqualByComparingTo("100.00");
     assertThat(invoice.getOutstandingBalance()).isEqualByComparingTo("0.00");
@@ -73,8 +74,8 @@ class InvoiceBalanceTest {
   void amountPaidIsSumOfPayments() {
     Invoice invoice = invoiceOnActivePolicy("900.00");
 
-    invoice.applyPayment(money("100.50"), PaymentMethod.CARD, "REF-1");
-    invoice.applyPayment(money("200.25"), PaymentMethod.DIRECT_DEBIT, "REF-2");
+    invoice.applyPayment(money("100.50"), PaymentMethod.CARD, "REF-1", RECEIVED_AT);
+    invoice.applyPayment(money("200.25"), PaymentMethod.DIRECT_DEBIT, "REF-2", RECEIVED_AT);
 
     assertThat(invoice.getAmountPaid()).isEqualByComparingTo("300.75");
     assertThat(invoice.getPayments())
@@ -103,7 +104,7 @@ class InvoiceBalanceTest {
   void settledInvoiceIsNotOverdue() {
     Invoice invoice = overdueInvoice("200.00");
 
-    invoice.applyPayment(money("200.00"), PaymentMethod.CARD, "REF-1");
+    invoice.applyPayment(money("200.00"), PaymentMethod.CARD, "REF-1", RECEIVED_AT);
 
     assertThat(invoice.isOverdue(LocalDate.now())).isFalse();
   }
@@ -133,7 +134,7 @@ class InvoiceBalanceTest {
   @DisplayName("a part-paid past-due invoice keeps partially paid status but still reads as overdue")
   void partPaidPastDueInvoiceKeepsPartiallyPaidStatus() {
     Invoice invoice = overdueInvoice("200.00");
-    invoice.applyPayment(money("50.00"), PaymentMethod.CARD, "REF-1");
+    invoice.applyPayment(money("50.00"), PaymentMethod.CARD, "REF-1", RECEIVED_AT);
 
     invoice.markOverdueIfDue(LocalDate.now());
 

@@ -8,6 +8,7 @@ import com.insurancebilling.domain.InvoiceStatus;
 import com.insurancebilling.service.InvoiceService;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -21,19 +22,28 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * The invoice and payment REST endpoints.
+ *
+ * <p>The {@code asOf} date handed to every {@link InvoiceResponse} comes from the injected
+ * {@link Clock}, which is built from the configured business zone. Reading it from
+ * {@code LocalDate.now()} made the {@code overdue} flag depend on the host's default zone — DEF-012.
+ */
 @RestController
 @RequestMapping("/api/invoices")
 public class InvoiceController {
 
   private final InvoiceService invoices;
+  private final Clock clock;
 
-  public InvoiceController(InvoiceService invoices) {
+  public InvoiceController(InvoiceService invoices, Clock clock) {
     this.invoices = invoices;
+    this.clock = clock;
   }
 
   @GetMapping
   public List<InvoiceResponse> list(@RequestParam(required = false) InvoiceStatus status) {
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(clock);
     return invoices.findAll(status).stream()
         .map(invoice -> InvoiceResponse.from(invoice, today))
         .toList();
@@ -41,12 +51,12 @@ public class InvoiceController {
 
   @GetMapping("/{id}")
   public InvoiceResponse get(@PathVariable Long id) {
-    return InvoiceResponse.from(invoices.findById(id), LocalDate.now());
+    return InvoiceResponse.from(invoices.findById(id), LocalDate.now(clock));
   }
 
   @PostMapping
   public ResponseEntity<InvoiceResponse> create(@Valid @RequestBody InvoiceRequest request) {
-    InvoiceResponse created = InvoiceResponse.from(invoices.create(request), LocalDate.now());
+    InvoiceResponse created = InvoiceResponse.from(invoices.create(request), LocalDate.now(clock));
     return ResponseEntity.created(URI.create("/api/invoices/" + created.id())).body(created);
   }
 
@@ -70,6 +80,6 @@ public class InvoiceController {
   /** Cancels an invoice, so suites can verify that a cancelled invoice refuses payment. */
   @PostMapping("/{id}/cancellation")
   public InvoiceResponse cancel(@PathVariable Long id) {
-    return InvoiceResponse.from(invoices.cancel(id), LocalDate.now());
+    return InvoiceResponse.from(invoices.cancel(id), LocalDate.now(clock));
   }
 }

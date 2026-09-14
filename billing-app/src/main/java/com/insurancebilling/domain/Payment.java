@@ -19,6 +19,12 @@ import java.time.Instant;
  *
  * <p>Payments are append-only: an invoice's paid amount is the sum of its payments, never a stored
  * running total that could drift out of step with the payment history.
+ *
+ * <p>{@code receivedAt} is supplied by the caller rather than read from {@code Instant.now()} inside
+ * this constructor. When a payment was received is a business fact recorded on a financial document,
+ * not an incidental detail, and reading the machine clock here made it impossible to state in a test
+ * and impossible to control from configuration. It now comes from the application's business clock,
+ * the same source the overdue rule reads. See DEF-012 in {@code docs/defect-reports.md}.
  */
 @Entity
 @Table(name = "payments")
@@ -49,12 +55,17 @@ public class Payment {
     // required by JPA
   }
 
-  Payment(Invoice invoice, BigDecimal amount, PaymentMethod method, String reference) {
+  Payment(
+      Invoice invoice,
+      BigDecimal amount,
+      PaymentMethod method,
+      String reference,
+      Instant receivedAt) {
     this.invoice = invoice;
     this.amount = Money.normalise(amount);
     this.method = method;
     this.reference = reference;
-    this.receivedAt = Instant.now();
+    this.receivedAt = receivedAt;
   }
 
   public Long getId() {
