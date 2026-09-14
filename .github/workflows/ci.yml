@@ -317,12 +317,22 @@ jobs:
 
       # npm ci rather than npm install: it installs exactly the committed lockfile, so a transitive
       # release cannot change what CI runs without the lockfile change showing up in a diff.
+      #
+      # --ignore-scripts states what was already true and relied on. Cypress's postinstall hook is the
+      # step that downloads the browser binary, and it does not run under an ignore-scripts policy -
+      # which is why the explicit install and verify below exist at all. Turning the hook off here
+      # makes CI behave the same way whatever the runner's npm defaults are, and closes the window
+      # where a transitive package's lifecycle script executes with the repository checked out.
+      #
+      # The binaries are called by path rather than through npx. npx will fetch and run a package that
+      # is not installed locally, so `npx cypress` silently becomes "download some version of Cypress"
+      # the day node_modules is incomplete. The path form fails instead, which is the answer you want.
       - name: Install Cypress
         working-directory: cypress
         run: |
-          npm ci
-          npx cypress install
-          npx cypress verify
+          npm ci --ignore-scripts
+          ./node_modules/.bin/cypress install
+          ./node_modules/.bin/cypress verify
 
       # Not instrumented, unlike the three suites above. This job deliberately never runs a Maven
       # build - it needs the jar artifact and Node, nothing else - so there is no JaCoCo agent jar
@@ -333,7 +343,7 @@ jobs:
 
       - name: Run Cypress smoke suite
         working-directory: cypress
-        run: npx cypress run
+        run: ./node_modules/.bin/cypress run
 
       - name: Stop application
         if: always()
@@ -432,8 +442,12 @@ jobs:
       #
       # codecov.yml configures both statuses as informational: they report, they do not block. See
       # docs/code-quality.md for why this project has no coverage threshold.
+      #
+      # Pinned to a commit rather than to the v5 tag. A tag is a moving pointer the action's owner can
+      # repoint at any time, and this step runs with a token: a compromised or simply changed action
+      # would have it. The tag is recorded in the comment so the version is still readable.
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
         with:
           files: billing-app/target/site/jacoco-full/jacoco.xml
           flags: full-stack
