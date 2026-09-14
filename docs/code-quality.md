@@ -13,14 +13,13 @@ JaCoCo measures execution. Sonar reads the source: null dereferences, resource l
 branches, duplicated blocks, security hotspots. Codecov is the only one of the three that says anything
 about the change in front of a reviewer rather than about the project as a whole.
 
-> **Status: both services are connected and have produced results**, as of the first run with
-> `SONAR_TOKEN` and `CODECOV_TOKEN` in place. Sonar imported the coverage report at exactly the figures
-> JaCoCo produced, and failed its quality gate on eight security findings in the workflow file — see
-> [what the first analysis found](#what-the-first-analysis-found). Codecov accepted the upload.
+> **Status: both services are connected and analysing `main`.** Quality gate **passing**, 0 bugs,
+> 0 vulnerabilities, 0 security hotspots, coverage imported at exactly the figures JaCoCo produced.
 >
-> Getting there took two corrections, both recorded in
-> [the last section](#what-has-and-has-not-been-verified): an upload that was silently rejected, and a
-> claim in this document that it had succeeded.
+> It did not start that way. The gate first came back `ERROR` on eight security findings in the workflow
+> file — see [what the first analysis found](#what-the-first-analysis-found) — and before that, a Codecov
+> upload was silently rejected while the job stayed green. Both are recorded in
+> [the last section](#what-has-and-has-not-been-verified) rather than tidied away.
 
 ---
 
@@ -114,18 +113,35 @@ After the fix the gate returned **OK** — `new_security_rating` back to 1, eigh
 open — and the Cypress suite still passes with lifecycle scripts off, which is the check that mattered:
 the browser binary is fetched by the explicit `cypress install` step, not by a postinstall hook.
 
-**Two bugs and 38 code smells on the existing code**, none of which gate anything, left as follow-ups
-rather than fixed in the same change:
+**Nothing else blocking.** On `main`, after the first CI analysis: **0 bugs, 0 vulnerabilities, 0
+security hotspots, 0% duplication, quality gate OK**, and 30 code smells left as follow-ups.
 
-- 16 × `java:S8688` — `LocalDate.now()` without a `ZoneId` or `Clock`. The most interesting of them for
-  this application: whether an invoice is overdue is decided by the server's default time zone.
-- 9 × `java:S5778` — assertion lambdas that invoke more than one method that could throw.
-- 4 × `java:S6809` — `@Transactional` called from the same class. `SeedDataLoader` already documents
-  why its call crosses a bean boundary; the remaining cases deserve the same check.
-- 2 × `java:S106` — `System.out` in the screenshot listener and the documentation tool.
-- 2 bugs in `templates/fragments/header.html`: no `lang` attribute and no `<title>`. Both are reported
-  against a Thymeleaf *fragment* rather than a page; the pages that include it have both. The `lang`
-  one is worth adding anyway.
+The 38 smells the import first reported became 30 once the CI scanner replaced SonarQube Cloud's
+automatic analysis, and the two reported bugs disappeared with it. Both differences are the
+configuration working as intended: automatic analysis cannot read the POM, so it judged the automation
+modules as product code and analysed the Thymeleaf fragment as if it were a page. Numbers from an
+automatic analysis and from a CI analysis are not comparable, which is worth knowing before quoting
+either.
+
+The 30 open smells, in the order they are worth looking at:
+
+| Count | Rule | What it says |
+|---:|---|---|
+| 10 | `java:S8688` | `LocalDate.now()` with no `ZoneId` or `Clock` |
+| 9 | `java:S5778` | An assertion lambda invokes more than one method that could throw |
+| 4 | `java:S6809` | `@Transactional` method called from within the same class |
+| 2 | `java:S8786` | A regular expression with superlinear runtime |
+| 5 | assorted | A hidden field, two AssertJ idioms, a deprecated call, a missing private constructor |
+
+`java:S8688` is the one to take seriously rather than suppress. **Whether an invoice is overdue is
+decided by `LocalDate.now()` reading the server's default time zone.** Move the process to a machine in
+another zone and an invoice changes status a few hours early or late; nothing in the suite would catch
+it, because every test evaluates the rule in the same zone it was written in. Injecting a `Clock` would
+also make the date-dependent tests controllable instead of relative.
+
+`java:S6809` deserves a check rather than a fix: `SeedDataLoader` already documents why its seeding call
+crosses a bean boundary — a self-invocation would bypass the proxy and run without a transaction. The
+other three should be read against that same reasoning.
 
 ---
 
@@ -254,42 +270,37 @@ Following the rule this repository holds itself to: anything not executed says s
 
 **Verified by running it, locally and on a runner:**
 
-- **The Sonar analysis**, once `SONAR_TOKEN` existed: `ANALYSIS SUCCESSFUL`, coverage imported as
-  97.1% line and 88.9% branch — identical to the JaCoCo report, which is the evidence that
-  `sonar.coverage.jacoco.xmlReportPaths` and the test-code declarations are right. The quality gate
-  came back `ERROR` on `new_security_rating`, from the eight workflow findings above.
-- **The Codecov upload**, once `CODECOV_TOKEN` existed: accepted, and confirmed independently through
-  the Codecov API rather than from the step's exit code — `"active": true`, one commit recorded,
-  469 hits / 14 misses / 6 partials.
-
+- **The pipeline, end to end on `main`.** All five suite jobs green, the coverage job downloading four
+  execution files, merging and rendering: 97.1% line, 88.9% branch, 100% class.
+- **The Sonar analysis**, once `SONAR_TOKEN` existed: `ANALYSIS SUCCESSFUL`, and coverage imported as
+  97.1% line / 88.9% branch — identical to the JaCoCo report, which is the evidence that
+  `sonar.coverage.jacoco.xmlReportPaths` and the test-code declarations are doing what they claim.
+- **The quality gate**, both ways: `ERROR` on the eight workflow findings, then `OK` after they were
+  fixed, confirmed as 0 open / 8 resolved.
+- **The Codecov upload**, once `CODECOV_TOKEN` existed: accepted, and confirmed through the Codecov API
+  rather than from the step's exit code — `"active": true`, 469 hits / 14 misses / 6 partials.
+- **Both README badges**, fetched directly: the Sonar badge renders *passed*, the Codecov badge 96%.
 - `mvn -B validate` on every module with the Sonar properties in place — the POMs parse and
   `sonar.coverage.jacoco.xmlReportPaths` interpolates to the two absolute paths intended.
 - `org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211` resolves from Maven Central.
 - The merge across several execution files: `jacoco:merge@merge-all-coverage` with
   `jacoco-e2e-api.exec`, `jacoco-e2e-ui.exec` and `jacoco-e2e.exec` present produces the same figures as
   the single-file merge — 99.0% line, 88.9% branch, 100% class.
-- `.github/workflows/ci.yml` parses as YAML with the expected jobs and step order.
-- **The pipeline itself.** A full run on a pull request: all five suite jobs green, the coverage job
-  downloading four execution files, merging them and rendering the report — 97.1% line, 88.9% branch,
-  100% class, matching the local figures class for class apart from the excluded reset tests.
 - **The analysis step skipping cleanly when `SONAR_TOKEN` is absent**, rather than failing the job.
-- **That `fail_ci_if_error: false` hides a rejected upload**, found by querying the Codecov API and
-  getting `"active": false` with zero commits while the job was green. See below.
 
-**Not verified, because it cannot be without the accounts:**
+**Still not verified:**
 
-- The Sonar analysis itself. It has never run. Whether the quality gate passes, what the analysis finds,
-  and whether the organisation and project keys match are all open questions until the setup above is
-  done.
-- Analysis of the **`main` branch**. Every run so far has been a pull-request analysis; `main` gets its
-  first CI analysis when this merges, and that is what the quality-gate badge reads.
 - The Codecov **pull-request comment**. `codecov.yml` sets `require_changes: true`, so a pull request
-  that changes no covered code gets no comment by design — which is every pull request so far. The
-  first one that touches `billing-app/src/main/java` is the real test.
+  that changes no covered code gets no comment by design — which is every pull request so far. The first
+  one touching `billing-app/src/main/java` is the real test.
+- The quality gate **blocking anything**. It reports; nothing is configured to require it. See
+  [what gates what](#what-gates-what).
 
-**Corrected along the way**, since both were stated here as fact and were not:
+**Corrected along the way**, since each was stated here as fact and was not:
 
-- The first Codecov upload was reported in this document as having succeeded tokenlessly. It was
-  rejected — `Token required - not valid tokenless upload` — and `fail_ci_if_error: false` left the
-  step green. The Codecov API showing `"active": false` with zero commits is what exposed it.
-- Both README badges, which cannot resolve until the corresponding projects exist.
+- That the first Codecov upload had succeeded tokenlessly. It was rejected — `Token required - not valid
+  tokenless upload` — and `fail_ci_if_error: false` left the step green. The Codecov API showing
+  `"active": false` with zero commits is what exposed it; nothing in the pipeline did.
+- That the project carried two bugs and 38 code smells. Those were SonarQube Cloud's *automatic*
+  analysis, which cannot read the POM and therefore judged test framework code as product code. The CI
+  analysis reports 0 bugs and 30 smells.
