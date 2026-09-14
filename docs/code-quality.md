@@ -13,11 +13,14 @@ JaCoCo measures execution. Sonar reads the source: null dereferences, resource l
 branches, duplicated blocks, security hotspots. Codecov is the only one of the three that says anything
 about the change in front of a reviewer rather than about the project as a whole.
 
-> **Status: neither service has produced a result yet.** The Sonar step skips itself without a
-> `SONAR_TOKEN`, and the first Codecov upload was **rejected** — `Token required - not valid tokenless
-> upload` — while the job stayed green, for the reason in
-> [what gates what](#what-gates-what). The coverage merge that feeds both has run. What was and was not
-> verified is recorded in [the last section](#what-has-and-has-not-been-verified).
+> **Status: both services are connected and have produced results**, as of the first run with
+> `SONAR_TOKEN` and `CODECOV_TOKEN` in place. Sonar imported the coverage report at exactly the figures
+> JaCoCo produced, and failed its quality gate on eight security findings in the workflow file — see
+> [what the first analysis found](#what-the-first-analysis-found). Codecov accepted the upload.
+>
+> Getting there took two corrections, both recorded in
+> [the last section](#what-has-and-has-not-been-verified): an upload that was silently rejected, and a
+> claim in this document that it had succeeded.
 
 ---
 
@@ -64,6 +67,65 @@ locally the script runs it last and alone.
 
 Nothing else differs — which also settles what the uninstrumented Cypress job costs: **zero measured
 lines**. Everything the smoke suite touches, the Selenium suite already covers.
+
+---
+
+## The two coverage percentages, and why they differ
+
+JaCoCo reports **97.1%** line coverage for the CI run. Codecov reports **95.91%** for the same upload.
+Neither is wrong; they count a partially covered line differently.
+
+| | lines | hits | misses | partials |
+|---|---:|---:|---:|---:|
+| Codecov | 489 | 469 | 14 | 6 |
+| JaCoCo | 489 | 475 covered | 14 missed | — |
+
+JaCoCo calls a line covered if it was executed at all, so a line whose `if` took only one of its two
+branches counts as covered and the shortfall shows up in the separate branch figure. Codecov splits
+those out as *partials* and leaves them out of the hit count: 469/489 = 95.91%, and
+469 + 6 partials = JaCoCo's 475.
+
+The six partials are the same six missed branches behind the 88.9% branch coverage, each named in
+[`coverage.md`](coverage.md). So the two tools agree on the facts and disagree on one definition —
+worth knowing before someone asks why the badge and the report disagree.
+
+---
+
+## What the first analysis found
+
+Worth recording, because the tool earned its place immediately.
+
+**Eight MAJOR security findings, every one of them in `.github/workflows/ci.yml`**, which failed the
+quality gate on new code with a security rating of 3. They were fixed on the branch that introduced
+them:
+
+| Rule | Finding | Fix |
+|---|---|---|
+| `githubactions:S7637` | `codecov/codecov-action@v5` is a moving tag | Pinned to a commit SHA, tag kept in a comment |
+| `githubactions:S6505` | `npm ci` allows lifecycle scripts to run | `npm ci --ignore-scripts` |
+| `githubactions:S6505`, `S8543` | `npx` fetches and runs packages that are not installed locally | Call `./node_modules/.bin/cypress` by path |
+
+The npx one is the interesting one. That job installs from a committed lockfile precisely so a
+transitive release cannot change what CI runs — and then invoked the binary through a command that will
+happily download a different version if `node_modules` is incomplete. The path form fails instead,
+which is the behaviour the lockfile was there to guarantee.
+
+After the fix the gate returned **OK** — `new_security_rating` back to 1, eight findings resolved, none
+open — and the Cypress suite still passes with lifecycle scripts off, which is the check that mattered:
+the browser binary is fetched by the explicit `cypress install` step, not by a postinstall hook.
+
+**Two bugs and 38 code smells on the existing code**, none of which gate anything, left as follow-ups
+rather than fixed in the same change:
+
+- 16 × `java:S8688` — `LocalDate.now()` without a `ZoneId` or `Clock`. The most interesting of them for
+  this application: whether an invoice is overdue is decided by the server's default time zone.
+- 9 × `java:S5778` — assertion lambdas that invoke more than one method that could throw.
+- 4 × `java:S6809` — `@Transactional` called from the same class. `SeedDataLoader` already documents
+  why its call crosses a bean boundary; the remaining cases deserve the same check.
+- 2 × `java:S106` — `System.out` in the screenshot listener and the documentation tool.
+- 2 bugs in `templates/fragments/header.html`: no `lang` attribute and no `<title>`. Both are reported
+  against a Thymeleaf *fragment* rather than a page; the pages that include it have both. The `lang`
+  one is worth adding anyway.
 
 ---
 
@@ -192,6 +254,14 @@ Following the rule this repository holds itself to: anything not executed says s
 
 **Verified by running it, locally and on a runner:**
 
+- **The Sonar analysis**, once `SONAR_TOKEN` existed: `ANALYSIS SUCCESSFUL`, coverage imported as
+  97.1% line and 88.9% branch — identical to the JaCoCo report, which is the evidence that
+  `sonar.coverage.jacoco.xmlReportPaths` and the test-code declarations are right. The quality gate
+  came back `ERROR` on `new_security_rating`, from the eight workflow findings above.
+- **The Codecov upload**, once `CODECOV_TOKEN` existed: accepted, and confirmed independently through
+  the Codecov API rather than from the step's exit code — `"active": true`, one commit recorded,
+  469 hits / 14 misses / 6 partials.
+
 - `mvn -B validate` on every module with the Sonar properties in place — the POMs parse and
   `sonar.coverage.jacoco.xmlReportPaths` interpolates to the two absolute paths intended.
 - `org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211` resolves from Maven Central.
@@ -211,8 +281,15 @@ Following the rule this repository holds itself to: anything not executed says s
 - The Sonar analysis itself. It has never run. Whether the quality gate passes, what the analysis finds,
   and whether the organisation and project keys match are all open questions until the setup above is
   done.
-- Any Codecov upload being **accepted**. The first attempt was rejected with `Token required - not
-  valid tokenless upload`: Codecov no longer accepts unauthenticated uploads from GitHub Actions, even
-  for public repositories. `CODECOV_TOKEN` was added afterwards and nothing has run since.
-- The Codecov **pull-request comment**, which additionally needs the Codecov GitHub app installed.
+- Analysis of the **`main` branch**. Every run so far has been a pull-request analysis; `main` gets its
+  first CI analysis when this merges, and that is what the quality-gate badge reads.
+- The Codecov **pull-request comment**. `codecov.yml` sets `require_changes: true`, so a pull request
+  that changes no covered code gets no comment by design — which is every pull request so far. The
+  first one that touches `billing-app/src/main/java` is the real test.
+
+**Corrected along the way**, since both were stated here as fact and were not:
+
+- The first Codecov upload was reported in this document as having succeeded tokenlessly. It was
+  rejected — `Token required - not valid tokenless upload` — and `fail_ci_if_error: false` left the
+  step green. The Codecov API showing `"active": false` with zero commits is what exposed it.
 - Both README badges, which cannot resolve until the corresponding projects exist.
