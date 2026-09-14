@@ -191,7 +191,7 @@ either never fire or fire at random, and a performance gate that fails at random
 | [Performance results](perf/README.md) | Measured JMeter numbers and why they are not a capacity claim |
 | [Code coverage](docs/coverage.md) | Line and branch coverage, how black-box suites are measured, every remaining gap named |
 | [Code quality tooling](docs/code-quality.md) | JaCoCo, SonarQube Cloud and Codecov — what each answers, how they are configured, what is allowed to block a merge |
-| [Interview guide](docs/interview-guide.md) | Architecture walkthroughs by file path, with the uncomfortable questions answered |
+| [Design rationale](docs/design-rationale.md) | How the framework is built and why, by file path — including the decisions that were wrong first, and the limits of what this repository claims |
 
 ## Test counts
 
@@ -212,8 +212,11 @@ publishes their merged coverage. The two excluded are the `test-support`
 reset tests, which wipe the database and therefore cannot run beside anything else; `scripts/coverage.sh`
 runs them last, on their own.
 
-Verified to pass **twice in a row against one running application instance**, which is the check that
-catches shared-state coupling between tests.
+Verified to pass **twice in a row against one running application instance** — 97 black-box tests
+(52 API, 18 UI, 20 BDD, 7 smoke) run through twice on 2026-09-14 against an application started once,
+with no reset between the passes. That is the check that catches shared-state coupling: a suite which
+only passes against a freshly started application is hiding a dependency that surfaces later as
+apparent flakiness in an unrelated test.
 
 The application uses JUnit 5 because that is the idiomatic Spring Boot stack; the automation modules use
 TestNG for its groups, data providers and parallel execution, which is what the QA tooling ecosystem is
