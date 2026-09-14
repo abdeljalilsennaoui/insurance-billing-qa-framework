@@ -214,7 +214,7 @@ never registered, so `@Before("@ui")` never fired. Both runners now list both pa
 
 **File:** `.github/workflows/ci.yml` — five jobs.
 
-1. **build** — `mvn -B clean install -DskipITs`, runs the 66 application tests, uploads the jar.
+1. **build** — `mvn -B clean install -DskipITs`, runs the 72 application tests, uploads the jar.
 2. **api-tests** — downloads the jar, `scripts/start-app.sh`, `mvn -B verify -pl qa-api-tests`.
 3. **ui-tests** — same, Selenium headless, uploads failure screenshots.
 4. **bdd-tests** — same, uploads Cucumber HTML reports always.

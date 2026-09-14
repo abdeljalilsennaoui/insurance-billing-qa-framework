@@ -37,7 +37,7 @@ package alone reads 44% against 94%. [`coverage.md`](coverage.md) covers the mec
 So the pipeline collects both halves:
 
 ```
-build         ── runs the 66 application tests ─────────────────► jacoco.exec
+build         ── runs the 72 application tests ─────────────────► jacoco.exec
 api-tests    ─┐
 ui-tests      ├── JACOCO=true scripts/start-app.sh ─────────────► jacoco-e2e.exec  (one per job)
 bdd-tests    ─┘   the agent is inside the application process
@@ -123,25 +123,40 @@ modules as product code and analysed the Thymeleaf fragment as if it were a page
 automatic analysis and from a CI analysis are not comparable, which is worth knowing before quoting
 either.
 
-The 30 open smells, in the order they are worth looking at:
+The 30 open smells the first analysis reported, in the order they were worth looking at:
 
-| Count | Rule | What it says |
-|---:|---|---|
-| 10 | `java:S8688` | `LocalDate.now()` with no `ZoneId` or `Clock` |
-| 9 | `java:S5778` | An assertion lambda invokes more than one method that could throw |
-| 4 | `java:S6809` | `@Transactional` method called from within the same class |
-| 2 | `java:S8786` | A regular expression with superlinear runtime |
-| 5 | assorted | A hidden field, two AssertJ idioms, a deprecated call, a missing private constructor |
+| Count | Rule | What it says | Status |
+|---:|---|---|---|
+| 10 | `java:S8688` | `LocalDate.now()` with no `ZoneId` or `Clock` | **Fixed** — DEF-012 |
+| 9 | `java:S5778` | An assertion lambda invokes more than one method that could throw | Open |
+| 4 | `java:S6809` | `@Transactional` method called from within the same class | Open, see below |
+| 2 | `java:S8786` | A regular expression with superlinear runtime | Open |
+| 5 | assorted | A hidden field, two AssertJ idioms, a deprecated call, a missing private constructor | Open |
 
-`java:S8688` is the one to take seriously rather than suppress. **Whether an invoice is overdue is
-decided by `LocalDate.now()` reading the server's default time zone.** Move the process to a machine in
-another zone and an invoice changes status a few hours early or late; nothing in the suite would catch
-it, because every test evaluates the rule in the same zone it was written in. Injecting a `Clock` would
-also make the date-dependent tests controllable instead of relative.
+### `java:S8688` — fixed, and it was a real defect
 
-`java:S6809` deserves a check rather than a fix: `SeedDataLoader` already documents why its seeding call
-crosses a bean boundary — a self-invocation would bypass the proxy and run without a transaction. The
-other three should be read against that same reasoning.
+This was the one to take seriously rather than suppress, and taking it seriously found a defect.
+**Whether an invoice was overdue was decided by `LocalDate.now()` reading the server's default time
+zone.** Moving the process to a machine in another zone changed invoice statuses by up to a day, and
+nothing in the suite could catch it: every test evaluated the rule in the same zone it was written in,
+so the test and the code made the identical assumption and agreed with each other. 165 tests and 99%
+line coverage, and the affected lines all reported as covered — because they *ran*. Coverage records
+execution, not correctness.
+
+The fix is a `Clock` bean built from `billing.time-zone` (default `America/Toronto`), injected into the
+five classes that read the date, with `Invoice.applyPayment` now taking the receipt instant as an
+argument for the same reason `isOverdue` takes the reference date. The regression test freezes that
+clock at an instant where the UTC date and the business-zone date differ; it fails 4 of 6 against the
+unfixed code. Full write-up in [`defect-reports.md`](defect-reports.md) as DEF-012.
+
+This is the strongest argument in the repository for running a tool that reads the source rather than
+executes it. Static analysis found in one pass what 165 executing tests structurally could not.
+
+### `java:S6809` — a check rather than a fix
+
+`SeedDataLoader` already documents why its seeding call crosses a bean boundary — a self-invocation
+would bypass the proxy and run without a transaction. The other three should be read against that same
+reasoning.
 
 ---
 

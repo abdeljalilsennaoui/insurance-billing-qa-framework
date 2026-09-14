@@ -37,7 +37,7 @@ banner() {
 }
 
 banner "1/5  Build and in-process coverage"
-# Produces billing-app/target/jacoco.exec from the 66 unit and integration tests.
+# Produces billing-app/target/jacoco.exec from the 72 unit and integration tests.
 mvn -B clean install -DskipITs
 
 banner "2/5  Start application with the JaCoCo agent"
