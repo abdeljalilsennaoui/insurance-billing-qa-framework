@@ -13,11 +13,11 @@ JaCoCo measures execution. Sonar reads the source: null dereferences, resource l
 branches, duplicated blocks, security hotspots. Codecov is the only one of the three that says anything
 about the change in front of a reviewer rather than about the project as a whole.
 
-> **Status: the Sonar analysis has never executed.** It needs a SonarQube Cloud project and a
-> `SONAR_TOKEN` secret, neither of which existed when this was written, so the step skips itself. The
-> coverage merge and the Codecov upload have run in CI. What was and was not verified is recorded in
-> [the last section](#what-has-and-has-not-been-verified), and the workflow step carries the same
-> warning.
+> **Status: neither service has produced a result yet.** The Sonar step skips itself without a
+> `SONAR_TOKEN`, and the first Codecov upload was **rejected** — `Token required - not valid tokenless
+> upload` — while the job stayed green, for the reason in
+> [what gates what](#what-gates-what). The coverage merge that feeds both has run. What was and was not
+> verified is recorded in [the last section](#what-has-and-has-not-been-verified).
 
 ---
 
@@ -121,6 +121,12 @@ here specifically — several remaining uncovered branches are defensive code no
 application can reach, so a gate would eventually be satisfied by writing tests that construct
 impossible states. That is worse than the gap.
 
+`fail_ci_if_error: false` has a cost worth naming, because this project already has three defects of
+exactly this shape: **a rejected upload leaves the job green**. The first run proved it — Codecov
+refused the upload as unauthenticated, the step reported success, and the only symptom was a dashboard
+that stayed empty. The trade is deliberate: a coverage service being unreachable should not fail a build
+whose tests passed. The way to notice is the step log or the dashboard, not the job's colour.
+
 **Sonar** submits its analysis and the Maven step ends there; it does not wait on the quality gate.
 Enforcement, if wanted, belongs to SonarQube Cloud's own pull-request check combined with a branch
 protection rule — that is the mechanism the service provides, it reports on the pull request where the
@@ -196,14 +202,17 @@ Following the rule this repository holds itself to: anything not executed says s
 - **The pipeline itself.** A full run on a pull request: all five suite jobs green, the coverage job
   downloading four execution files, merging them and rendering the report — 97.1% line, 88.9% branch,
   100% class, matching the local figures class for class apart from the excluded reset tests.
-- **The Codecov upload**, which succeeded without a token (public repository, tokenless upload).
 - **The analysis step skipping cleanly when `SONAR_TOKEN` is absent**, rather than failing the job.
+- **That `fail_ci_if_error: false` hides a rejected upload**, found by querying the Codecov API and
+  getting `"active": false` with zero commits while the job was green. See below.
 
 **Not verified, because it cannot be without the accounts:**
 
 - The Sonar analysis itself. It has never run. Whether the quality gate passes, what the analysis finds,
   and whether the organisation and project keys match are all open questions until the setup above is
   done.
-- The Codecov **pull-request comment**, which needs the Codecov GitHub app installed on the repository.
-  The upload succeeded; whether it produces a comment is a separate question.
+- Any Codecov upload being **accepted**. The first attempt was rejected with `Token required - not
+  valid tokenless upload`: Codecov no longer accepts unauthenticated uploads from GitHub Actions, even
+  for public repositories. `CODECOV_TOKEN` was added afterwards and nothing has run since.
+- The Codecov **pull-request comment**, which additionally needs the Codecov GitHub app installed.
 - Both README badges, which cannot resolve until the corresponding projects exist.
