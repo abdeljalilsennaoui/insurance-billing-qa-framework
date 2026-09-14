@@ -127,12 +127,37 @@ Worth being clear about, because a high number invites the wrong conclusion:
   numbers is arbitrary; one chosen to match them is decoration. The figure is published and the gaps are
   named instead.
 
-## Why CI publishes the narrower number
+## What CI publishes
 
-The pipeline uploads the **in-process** report as the `coverage-report-in-process` artifact, from the
-existing build job at no extra cost.
+Both reports, and the full-stack one is the figure that reaches the badges.
 
-It does not produce the full-stack report, which would mean re-running every suite a second time inside
-a single job purely to collect merged execution data — several minutes added to every pull request for a
-number that does not gate anything. The full-stack measurement is a periodic local exercise, which is
-what `scripts/coverage.sh` is for, and its results are recorded above.
+The build job uploads the **in-process** report as the `coverage-report-in-process` artifact, as it
+always has. A `coverage` job then assembles the full-stack measurement from data the pipeline was
+already producing:
+
+| Job | What it contributes |
+|---|---|
+| `build` | `jacoco.exec` — the application's own 66 unit and integration tests |
+| `api-tests`, `ui-tests`, `bdd-tests` | one `jacoco-e2e.exec` each, written by the agent inside the application process those suites drove |
+| `coverage` | downloads all four, merges them, renders the report, sends it to Codecov and SonarQube Cloud |
+
+The `cypress-smoke` job contributes nothing: it runs no Maven build, so there is no agent jar on that
+runner, and its coverage would repeat what the Selenium suite already records.
+
+Each suite job starts the application with `JACOCO=true scripts/start-app.sh` — the same switch
+`scripts/coverage.sh` uses locally — and uploads what the agent wrote on shutdown.
+
+**Nothing is re-run to produce this.** An earlier version of this document argued that the full-stack
+figure would cost several minutes on every pull request, because it assumed the only way to get it was
+to run every suite a second time inside one job. That is true of the obvious approach and not true of
+this one: the suites already run, attaching the agent costs them almost nothing, and the extra job only
+collects what they recorded.
+
+One difference from a local `scripts/coverage.sh` run remains, and it has been measured rather than
+estimated: CI reports **97.1%** line coverage against the 99.0% above. Compared class by class, the
+entire difference is `TestSupportController` — 7 of 16 lines in CI, 16 of 16 locally. The `test-support`
+group wipes the database, so it is excluded from CI and runs last and alone locally. The figures in this
+document are from a local run, which includes it.
+
+The tooling that consumes these reports — SonarQube Cloud, Codecov, and what each is and is not allowed
+to block — is described in [`code-quality.md`](code-quality.md).

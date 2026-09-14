@@ -69,6 +69,13 @@
   </dependencies>
 
   <properties>
+    <!--
+      Kept out of the Sonar analysis for the same reason JaCoCo excludes it: xjc writes these classes
+      from the XSD into target/generated-sources, Maven adds that directory as a source root, and
+      issues raised against generated code are issues with the generator. Nobody can act on them here
+      and they would bury the findings that matter.
+    -->
+    <sonar.exclusions>**/soap/generated/**</sonar.exclusions>
     <jaxb.runtime.version>4.0.9</jaxb.runtime.version>
     <wsdl4j.version>1.6.3</wsdl4j.version>
     <jaxb2.plugin.version>3.2.0</jaxb2.plugin.version>
@@ -165,7 +172,14 @@
                   <directory>${project.build.directory}</directory>
                   <includes>
                     <include>jacoco.exec</include>
-                    <include>jacoco-e2e.exec</include>
+                    <!--
+                      A pattern rather than the single jacoco-e2e.exec, because CI produces one file
+                      per suite job: the API, UI, BDD and smoke suites each drive their own
+                      application process on their own runner, and the merge has to take all of them.
+                      A local run of scripts/coverage.sh still writes exactly one, and the pattern
+                      matches that too.
+                    -->
+                    <include>jacoco-e2e*.exec</include>
                   </includes>
                 </fileSet>
               </fileSets>
