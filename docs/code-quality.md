@@ -305,11 +305,14 @@ Following the rule this repository holds itself to: anything not executed says s
 
 **Still not verified:**
 
-- The Codecov **pull-request comment**. `codecov.yml` sets `require_changes: true`, so a pull request
-  that changes no covered code gets no comment by design — which is every pull request so far. The first
-  one touching `billing-app/src/main/java` is the real test.
+- The Codecov **pull-request comment** as a *coverage comparison*. PR #49 was the first to touch
+  `billing-app/src/main/java`, and Codecov did comment on it — but with the one-off "once you merge this
+  PR into your default branch, you're all set" notice, because there is no base report on `main` to
+  compare against until a covered change lands there. So the comment mechanism works; what it will say
+  about a diff is still unproven, and the first pull request after #49 merges is the real test.
 - The quality gate **blocking anything**. It reports; nothing is configured to require it. See
-  [what gates what](#what-gates-what).
+  [what gates what](#what-gates-what). It does *run* on pull requests — #49 returned `OK` with
+  `new_coverage` 100% — but nothing acts on the result.
 
 **Corrected along the way**, since each was stated here as fact and was not:
 
