@@ -385,7 +385,8 @@ insurer's — including every GitHub Actions runner, which is UTC.
 
 **Steps to reproduce**
 
-1. Start the application on a host in UTC — `TZ=UTC ./mvnw spring-boot:run`, or any CI runner.
+1. Start the application on a host in UTC — `TZ=UTC java -jar billing-app/target/billing-app.jar`,
+   or any CI runner.
 2. Create an invoice due today, Eastern time.
 3. At 20:00 Eastern — 00:00 the next day in UTC — `GET /api/invoices/{id}`.
 
