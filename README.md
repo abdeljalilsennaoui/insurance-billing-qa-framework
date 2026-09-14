@@ -69,6 +69,10 @@ mvn -B clean install -DskipITs
 ./scripts/start-app.sh
 ./scripts/stop-app.sh
 
+# Regenerate the screenshots embedded in docs/test-report.md. Resets the database to the seeded
+# baseline first, so it must not run while a suite is running.
+./scripts/capture-screenshots.sh
+
 # API suite against a running application
 mvn -B verify -pl qa-api-tests
 
@@ -167,10 +171,11 @@ either never fire or fire at random, and a performance gate that fails at random
 
 | Document | What it covers |
 |---|---|
+| [Test execution report](docs/test-report.md) | One full run of every suite, with screenshots of the console, coverage figures and the limitations |
 | [Test strategy](docs/test-strategy.md) | Test levels, architectural decisions with their trade-offs, risk prioritisation, known limitations |
 | [Manual test cases](docs/manual-test-cases.md) | 22 cases with steps and expected results, each marked automated or not |
-| [Traceability matrix](docs/requirements-traceability-matrix.md) | 21 requirements mapped to manual cases and automated tests by class and method |
-| [Defect reports](docs/defect-reports.md) | The 9 defects found during development, each linked to its fixing commit |
+| [Traceability matrix](docs/requirements-traceability-matrix.md) | 23 requirements mapped to manual cases and automated tests by class and method |
+| [Defect reports](docs/defect-reports.md) | The 11 defects found during development, each linked to its fixing commit |
 | [Agile workflow](docs/agile-workflow.md) | How the work was run, and how it maps to Jira and Zephyr |
 | [Performance results](perf/README.md) | Measured JMeter numbers and why they are not a capacity claim |
 | [Code coverage](docs/coverage.md) | Line and branch coverage, how black-box suites are measured, every remaining gap named |
