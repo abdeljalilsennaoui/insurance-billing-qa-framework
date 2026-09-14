@@ -139,7 +139,7 @@ assertion could not tell "the client sent nonsense" from "the platform applied a
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to `main` and every pull
 request:
 
-1. **Build, application tests** — builds all modules, runs the application's 66 unit and integration
+1. **Build, application tests** — builds all modules, runs the application's 72 unit and integration
    tests, publishes the application jar and its coverage data as artifacts.
 2. **API automation** — downloads that jar, starts it, runs the REST Assured regression suite, stops
    it, uploads test reports.
@@ -186,7 +186,7 @@ either never fire or fire at random, and a performance gate that fails at random
 | [Test strategy](docs/test-strategy.md) | Test levels, architectural decisions with their trade-offs, risk prioritisation, known limitations |
 | [Manual test cases](docs/manual-test-cases.md) | 22 cases with steps and expected results, each marked automated or not |
 | [Traceability matrix](docs/requirements-traceability-matrix.md) | 23 requirements mapped to manual cases and automated tests by class and method |
-| [Defect reports](docs/defect-reports.md) | The 11 defects found during development, each linked to its fixing commit |
+| [Defect reports](docs/defect-reports.md) | The 12 defects found during development, each linked to its fixing commit |
 | [Agile workflow](docs/agile-workflow.md) | How the work was run, and how it maps to Jira and Zephyr |
 | [Performance results](perf/README.md) | Measured JMeter numbers and why they are not a capacity claim |
 | [Code coverage](docs/coverage.md) | Line and branch coverage, how black-box suites are measured, every remaining gap named |
@@ -198,16 +198,16 @@ either never fire or fire at random, and a performance gate that fails at random
 | Suite | Tests | Runner | In CI |
 |---|---:|---|---|
 | Domain unit | 27 | JUnit 5 | yes |
-| Application integration (API + web layer) | 39 | JUnit 5 + MockMvc | yes |
+| Application integration (API + web layer) | 45 | JUnit 5 + MockMvc | yes |
 | API automation (incl. 7 SOAP) | 52 | TestNG + REST Assured | yes |
 | UI automation | 18 | TestNG + Selenium 4 | yes |
 | BDD scenarios (14 API + 6 UI) | 20 | Cucumber 7 + TestNG | yes |
 | Smoke | 7 | Cypress | yes |
 | Reset endpoint (`test-support` group) | 2 | TestNG + REST Assured | no — must run alone |
-| **Total** | **165** | | **163** |
+| **Total** | **171** | | **169** |
 | Performance | 1 plan | JMeter | no — run manually, see [perf](perf/README.md) |
 
-163 of the 165 run on every pull request across five CI jobs, with a sixth that runs no tests and
+169 of the 171 run on every pull request across five CI jobs, with a sixth that runs no tests and
 publishes their merged coverage. The two excluded are the `test-support`
 reset tests, which wipe the database and therefore cannot run beside anything else; `scripts/coverage.sh`
 runs them last, on their own.

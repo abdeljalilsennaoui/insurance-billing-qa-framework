@@ -25,14 +25,14 @@ The suites are layered so that a failure points at a cause rather than at a symp
 | Level | Where | Count | Runs against | Responsible for |
 |---|---|---|---|---|
 | Domain unit | `billing-app/src/test/java/.../domain/` | 27 | Nothing — plain objects | Billing rules and balance arithmetic |
-| Application integration | `billing-app/src/test/java/.../api/` | 39 | Spring context + MockMvc | HTTP contract, status codes, error shape, rendered templates |
+| Application integration | `billing-app/src/test/java/.../api/` | 45 | Spring context + MockMvc | HTTP contract, status codes, error shape, rendered templates |
 | API automation | `qa-api-tests` | 54 | Running application over HTTP | The published contract as a client sees it |
 | UI automation | `qa-ui-tests` | 18 | Running application via Chrome | Browser journeys through the console |
 | BDD | `qa-bdd-tests` | 20 | Running application (API + Chrome) | Billing rules expressed as readable specifications |
 | Smoke | `cypress` | 7 | Running application via Cypress | Independent confirmation the console works |
 | Performance | `perf` | 1 plan | Running application | Throughput and latency trend, manual |
 
-**Total automated: 165 tests**, of which 163 run on every pull request across the five CI jobs.
+**Total automated: 171 tests**, of which 169 run on every pull request across the five CI jobs.
 
 Two are excluded deliberately: the `test-support` group exercises the database reset endpoint, and running
 it beside the parallel regression suite would delete fixtures other tests were mid-way through using,

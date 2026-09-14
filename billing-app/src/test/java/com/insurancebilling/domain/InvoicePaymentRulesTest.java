@@ -1,5 +1,6 @@
 package com.insurancebilling.domain;
 
+import static com.insurancebilling.domain.DomainFixtures.RECEIVED_AT;
 import static com.insurancebilling.domain.DomainFixtures.invoiceOnActivePolicy;
 import static com.insurancebilling.domain.DomainFixtures.invoiceOnPolicyWithStatus;
 import static com.insurancebilling.domain.DomainFixtures.money;
@@ -26,7 +27,7 @@ class InvoicePaymentRulesTest {
   void nonPositiveAmountIsRejected(String amount) {
     Invoice invoice = invoiceOnActivePolicy("450.00");
 
-    assertThatThrownBy(() -> invoice.applyPayment(money(amount), PaymentMethod.CARD, "REF-1"))
+    assertThatThrownBy(() -> invoice.applyPayment(money(amount), PaymentMethod.CARD, "REF-1", RECEIVED_AT))
         .isInstanceOf(PaymentRejectedException.class)
         .extracting(e -> ((PaymentRejectedException) e).getReason())
         .isEqualTo(PaymentRejectionReason.AMOUNT_NOT_POSITIVE);
@@ -40,7 +41,7 @@ class InvoicePaymentRulesTest {
   void amountWithTooManyDecimalPlacesIsRejected(String amount) {
     Invoice invoice = invoiceOnActivePolicy("450.00");
 
-    assertThatThrownBy(() -> invoice.applyPayment(money(amount), PaymentMethod.CARD, "REF-1"))
+    assertThatThrownBy(() -> invoice.applyPayment(money(amount), PaymentMethod.CARD, "REF-1", RECEIVED_AT))
         .isInstanceOf(PaymentRejectedException.class)
         .extracting(e -> ((PaymentRejectedException) e).getReason())
         .isEqualTo(PaymentRejectionReason.AMOUNT_SCALE_INVALID);
@@ -53,7 +54,7 @@ class InvoicePaymentRulesTest {
   void overpaymentIsRejected() {
     Invoice invoice = invoiceOnActivePolicy("450.00");
 
-    assertThatThrownBy(() -> invoice.applyPayment(money("450.01"), PaymentMethod.CARD, "REF-1"))
+    assertThatThrownBy(() -> invoice.applyPayment(money("450.01"), PaymentMethod.CARD, "REF-1", RECEIVED_AT))
         .isInstanceOf(PaymentRejectedException.class)
         .extracting(e -> ((PaymentRejectedException) e).getReason())
         .isEqualTo(PaymentRejectionReason.EXCEEDS_OUTSTANDING_BALANCE);
@@ -65,9 +66,9 @@ class InvoicePaymentRulesTest {
   @DisplayName("overpayment is measured against the remaining balance, not the invoice total")
   void overpaymentIsMeasuredAgainstRemainingBalance() {
     Invoice invoice = invoiceOnActivePolicy("450.00");
-    invoice.applyPayment(money("400.00"), PaymentMethod.CARD, "REF-1");
+    invoice.applyPayment(money("400.00"), PaymentMethod.CARD, "REF-1", RECEIVED_AT);
 
-    assertThatThrownBy(() -> invoice.applyPayment(money("60.00"), PaymentMethod.CARD, "REF-2"))
+    assertThatThrownBy(() -> invoice.applyPayment(money("60.00"), PaymentMethod.CARD, "REF-2", RECEIVED_AT))
         .isInstanceOf(PaymentRejectedException.class)
         .extracting(e -> ((PaymentRejectedException) e).getReason())
         .isEqualTo(PaymentRejectionReason.EXCEEDS_OUTSTANDING_BALANCE);
@@ -79,9 +80,9 @@ class InvoicePaymentRulesTest {
   @DisplayName("a payment against a fully paid invoice is rejected")
   void paymentAgainstSettledInvoiceIsRejected() {
     Invoice invoice = invoiceOnActivePolicy("450.00");
-    invoice.applyPayment(money("450.00"), PaymentMethod.CARD, "REF-1");
+    invoice.applyPayment(money("450.00"), PaymentMethod.CARD, "REF-1", RECEIVED_AT);
 
-    assertThatThrownBy(() -> invoice.applyPayment(money("10.00"), PaymentMethod.CARD, "REF-2"))
+    assertThatThrownBy(() -> invoice.applyPayment(money("10.00"), PaymentMethod.CARD, "REF-2", RECEIVED_AT))
         .isInstanceOf(PaymentRejectedException.class)
         .extracting(e -> ((PaymentRejectedException) e).getReason())
         .isEqualTo(PaymentRejectionReason.INVOICE_ALREADY_PAID);
@@ -95,7 +96,7 @@ class InvoicePaymentRulesTest {
     Invoice invoice = invoiceOnActivePolicy("450.00");
     invoice.cancel();
 
-    assertThatThrownBy(() -> invoice.applyPayment(money("10.00"), PaymentMethod.CARD, "REF-1"))
+    assertThatThrownBy(() -> invoice.applyPayment(money("10.00"), PaymentMethod.CARD, "REF-1", RECEIVED_AT))
         .isInstanceOf(PaymentRejectedException.class)
         .extracting(e -> ((PaymentRejectedException) e).getReason())
         .isEqualTo(PaymentRejectionReason.INVOICE_CANCELLED);
@@ -108,7 +109,7 @@ class InvoicePaymentRulesTest {
   void paymentOnInactivePolicyIsRejected(PolicyStatus policyStatus) {
     Invoice invoice = invoiceOnPolicyWithStatus("450.00", policyStatus);
 
-    assertThatThrownBy(() -> invoice.applyPayment(money("100.00"), PaymentMethod.CARD, "REF-1"))
+    assertThatThrownBy(() -> invoice.applyPayment(money("100.00"), PaymentMethod.CARD, "REF-1", RECEIVED_AT))
         .isInstanceOf(PaymentRejectedException.class)
         .extracting(e -> ((PaymentRejectedException) e).getReason())
         .isEqualTo(PaymentRejectionReason.POLICY_NOT_ACTIVE);
@@ -124,7 +125,7 @@ class InvoicePaymentRulesTest {
 
     // Both the amount and the invoice state are wrong. The caller is told about the amount,
     // because that is the part it can correct without further information.
-    assertThatThrownBy(() -> invoice.applyPayment(money("-50.00"), PaymentMethod.CARD, "REF-1"))
+    assertThatThrownBy(() -> invoice.applyPayment(money("-50.00"), PaymentMethod.CARD, "REF-1", RECEIVED_AT))
         .isInstanceOf(PaymentRejectedException.class)
         .extracting(e -> ((PaymentRejectedException) e).getReason())
         .isEqualTo(PaymentRejectionReason.AMOUNT_NOT_POSITIVE);
@@ -134,11 +135,11 @@ class InvoicePaymentRulesTest {
   @DisplayName("a rejected payment leaves no trace on the invoice")
   void rejectedPaymentLeavesInvoiceUnchanged() {
     Invoice invoice = invoiceOnActivePolicy("450.00");
-    invoice.applyPayment(money("50.00"), PaymentMethod.CARD, "REF-1");
+    invoice.applyPayment(money("50.00"), PaymentMethod.CARD, "REF-1", RECEIVED_AT);
 
     InvoiceStatus statusBefore = invoice.getStatus();
 
-    assertThatThrownBy(() -> invoice.applyPayment(money("1000.00"), PaymentMethod.CARD, "REF-2"))
+    assertThatThrownBy(() -> invoice.applyPayment(money("1000.00"), PaymentMethod.CARD, "REF-2", RECEIVED_AT))
         .isInstanceOf(PaymentRejectedException.class);
 
     assertThat(invoice.getStatus()).isEqualTo(statusBefore);

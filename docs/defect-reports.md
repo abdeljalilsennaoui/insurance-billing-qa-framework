@@ -1,6 +1,6 @@
 # Defect reports
 
-Eleven defects found while building and stabilising this project. Every one was actually encountered —
+Twelve defects found while building and stabilising this project. Every one was actually encountered —
 none is an illustrative example written to fill a template. Each is linked to the commit that fixed it,
 so the claim can be checked against the history.
 
@@ -22,6 +22,7 @@ or testing the wrong thing.
 | DEF-009 | SOAP endpoint rejects `application/xml` | Medium | SOAP suite | in PR #35 |
 | DEF-010 | Surefire claims an `*IT` class and runs it without an application | Medium | Coverage work | in PR #42 |
 | DEF-011 | `stalenessOf` escapes as a CDP error on a CI runner | High | CI, not local | in PR #42 |
+| DEF-012 | Overdue status decided by the host's default time zone | High | SonarQube Cloud static analysis | in PR #49 |
 
 ---
 
@@ -370,11 +371,98 @@ being the gate rather than a local run.
 class would have made the symptom disappear while leaving the wait probing a dead reference, and would
 have swallowed genuine driver errors with it.
 
-## Observations across the eleven
+## DEF-012 — Overdue status decided by the host's default time zone
 
-- **Five of eleven were found by automated tests** (DEF-001, DEF-002, DEF-006, DEF-008, DEF-011), two by
+**Severity:** High · **Priority:** High · **Component:** Billing domain / application configuration
+
+**Found by:** SonarQube Cloud static analysis, rule `java:S8688` ("`LocalDate.now()` should not be used
+without a `ZoneId` or `Clock`"), raised **10 times** on `billing-app`. Not by any test.
+
+**Environment:** JDK 21, Spring Boot 3.5.16. Reproducible on any host whose default zone is not the
+insurer's — including every GitHub Actions runner, which is UTC.
+
+**Preconditions:** an invoice exists whose due date is today.
+
+**Steps to reproduce**
+
+1. Start the application on a host in UTC — `TZ=UTC java -jar billing-app/target/billing-app.jar`,
+   or any CI runner.
+2. Create an invoice due today, Eastern time.
+3. At 20:00 Eastern — 00:00 the next day in UTC — `GET /api/invoices/{id}`.
+
+**Expected:** `"overdue": false`. It is still the due date for the business; the invoice has all
+evening to be paid.
+
+**Actual:** `"overdue": true`, and the next listing promotes the invoice to `OVERDUE`. The customer is
+late by four hours of somebody else's calendar.
+
+**Impact:** the business date was a property of the host, not a decision. Every date-dependent
+behaviour inherited it: the `overdue` flag on the REST and SOAP responses, the `OVERDUE` promotion in
+`InvoiceService`, the console's list and detail pages, and the whole seeded baseline, which is built
+relative to "today". Moving the deployment between zones would silently change invoice statuses, with
+nothing in the code to point at.
+
+**Root cause:** `LocalDate.now()` resolves against `ZoneId.systemDefault()`. The domain was never the
+problem — `Invoice.isOverdue(LocalDate asOf)` and `markOverdueIfDue(LocalDate asOf)` both take the
+reference date as an argument, and say in their Javadoc that they do so deliberately. The defect was
+entirely in who supplied that argument: five classes each called `LocalDate.now()` on their own,
+so the answer came from the JVM's environment rather than from the application's configuration.
+
+`Payment` had the same shape in a quieter form: `receivedAt = Instant.now()` inside the entity
+constructor. Not zone-dependent, but an unstateable business fact — nothing could say when a payment
+was recorded except the machine.
+
+**Why 165 tests and 99% line coverage did not catch it**
+
+Every suite evaluates the overdue rule in the same zone it was written in, and builds its fixtures from
+`LocalDate.now()` read from that same default zone. The test and the code make the identical
+assumption, so they agree with each other no matter what that assumption is. The suites also use
+comfortable margins — due in 30 days, or 10 days past due — so no assertion was ever near the midnight
+boundary where two zones disagree.
+
+Coverage made it worse rather than better, in the sense that matters: those lines report as covered,
+because they *were* executed. Line coverage records that a line ran. It cannot record that it ran with
+the right date.
+
+**Resolution:** a `Clock` bean built from `billing.time-zone`, defaulting to `America/Toronto`
+(`BillingTimeConfiguration`), injected into `InvoiceService`, `InvoiceController`,
+`InvoiceWebController`, `InvoiceStatusEndpoint` and `SeedDataLoader`. All ten `LocalDate.now()` calls
+became `LocalDate.now(clock)`. `Invoice.applyPayment` now takes the receipt instant as an argument,
+exactly as `isOverdue` takes the reference date, and the application supplies it from the same clock.
+
+An unknown zone id fails the context at startup instead of falling back to the system default — a
+silent fallback would restore the defect the bean exists to remove.
+
+**Regression test:** `InvoiceOverdueBusinessZoneTest`. It freezes the clock at `2026-01-15T04:30Z`,
+which is the **15th** in UTC and still the **14th** in `America/Toronto`, where it is 23:30 the previous
+evening; an invoice due on the 14th must not be overdue, and one due on the 13th must be. The zone the
+clock is frozen in is read back from `billing.time-zone`, so the test asks the application the question
+its own configuration answers rather than restating a literal.
+
+Run against the unfixed code it fails **4 of 6** — the `overdue` flag, the console's copy of it, the
+seeded issue date and the payment timestamp all came from wall-clock time. Against the fix, 6 of 6
+pass. The two that passed before the fix are the fixture's own straddles-midnight guard, and the
+complement case: an invoice due on the 13th is overdue under either reading, which is what makes the
+other assertions meaningful rather than a suite that says "never overdue".
+
+**Deliberately left alone:** the two `Instant.now()` calls in `ErrorResponse`. An `Instant` carries no
+zone, so `java:S8688` does not raise them and there is no zone bug to fix; the field is a diagnostic
+stamp on an error envelope rather than a fact recorded about the business. Threading the clock through
+a record's static factories and the exception handler would add wiring and change no behaviour. The
+payment timestamp is different in kind, which is why it was changed and this was not.
+
+**Lesson:** a test suite can only disagree with the code about things the two of them do not assume
+together. Both sides here read the date from the same default zone, so no amount of additional tests
+written the same way would have found it — and the coverage figure, being a record of execution rather
+than of correctness, reported the defective lines as fully exercised. It took a tool that reads the
+source instead of running it.
+
+## Observations across the twelve
+
+- **Five of twelve were found by automated tests** (DEF-001, DEF-002, DEF-006, DEF-008, DEF-011), two by
   **manual exploratory checking** (DEF-003, DEF-004), three only by **deliberately verifying the tooling did
-  what it was told** (DEF-005, DEF-007, DEF-009), and one by **adding coverage measurement** (DEF-010).
+  what it was told** (DEF-005, DEF-007, DEF-009), one by **adding coverage measurement** (DEF-010), and one
+  by **static analysis** (DEF-012).
 - **DEF-011 was found only by CI.** It passed every local run, including the two-consecutive-passes
   isolation check. That is the clearest evidence in this repository for why the pipeline is the gate and a
   local green run is not.
@@ -384,3 +472,7 @@ have swallowed genuine driver errors with it.
 - **The last group is the uncomfortable one.** DEF-005 and DEF-007 both produced *successful* output
   while doing the wrong thing. Neither would ever have been caught by adding more tests; they were
   caught by checking that a command had the effect it claimed.
+- **DEF-012 is the one no test could have found.** Not "no test did" — no test written the way these
+  tests are written could, because the suite and the application read the date from the same default
+  zone and therefore agreed with each other. It is also the clearest limit on the coverage number in
+  this repository: every line involved reported as covered, at 99%, throughout.

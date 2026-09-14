@@ -8,6 +8,7 @@ import com.insurancebilling.domain.Payment;
 import com.insurancebilling.domain.Policy;
 import com.insurancebilling.repository.InvoiceRepository;
 import com.insurancebilling.repository.PolicyRepository;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
  * payment rules: those live on {@link Invoice#applyPayment} so they cannot be bypassed and can be unit
  * tested without Spring. The service's job is to find the invoice, hand the request to the domain, and
  * let a rejection propagate to the exception handler.
+ *
+ * <p>It is also where "now" enters the billing rules. The domain takes the reference date and the
+ * receipt instant as arguments; this class supplies them from the injected {@link Clock}, which is
+ * built from the configured business zone rather than the host's default. See
+ * {@link com.insurancebilling.config.BillingTimeConfiguration} and DEF-012.
  */
 @Service
 @Transactional
@@ -28,12 +34,17 @@ public class InvoiceService {
   private final InvoiceRepository invoices;
   private final PolicyRepository policies;
   private final ReferenceGenerator references;
+  private final Clock clock;
 
   public InvoiceService(
-      InvoiceRepository invoices, PolicyRepository policies, ReferenceGenerator references) {
+      InvoiceRepository invoices,
+      PolicyRepository policies,
+      ReferenceGenerator references,
+      Clock clock) {
     this.invoices = invoices;
     this.policies = policies;
     this.references = references;
+    this.clock = clock;
   }
 
   public Invoice create(InvoiceRequest request) {
@@ -50,7 +61,7 @@ public class InvoiceService {
             request.dueDate());
     policy.addInvoice(invoice);
     Invoice saved = invoices.save(invoice);
-    saved.markOverdueIfDue(LocalDate.now());
+    saved.markOverdueIfDue(LocalDate.now(clock));
     return saved;
   }
 
@@ -62,7 +73,8 @@ public class InvoiceService {
    */
   public Payment pay(Long invoiceId, PaymentRequest request) {
     Invoice invoice = findById(invoiceId);
-    return invoice.applyPayment(request.amount(), request.method(), request.reference());
+    return invoice.applyPayment(
+        request.amount(), request.method(), request.reference(), clock.instant());
   }
 
   @Transactional(readOnly = true)
@@ -80,7 +92,7 @@ public class InvoiceService {
   @Transactional
   public List<Invoice> findAll(InvoiceStatus status) {
     List<Invoice> result = status == null ? invoices.findAll() : invoices.findByStatus(status);
-    result.forEach(invoice -> invoice.markOverdueIfDue(LocalDate.now()));
+    result.forEach(invoice -> invoice.markOverdueIfDue(LocalDate.now(clock)));
     return result;
   }
 

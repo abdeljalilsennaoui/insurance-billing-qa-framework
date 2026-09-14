@@ -5,7 +5,7 @@ and a percentage.
 
 ## The wrinkle: black-box suites are invisible to ordinary coverage
 
-`jacoco:prepare-agent` instruments the JVM that Surefire forks. That captures the application's own 66
+`jacoco:prepare-agent` instruments the JVM that Surefire forks. That captures the application's own 72
 unit and integration tests perfectly well. It captures **nothing** from the API, UI and BDD suites,
 because those drive the application over HTTP in a *separate process*. From the test JVM's point of
 view, no class in `billing-app` was ever called.
@@ -22,7 +22,7 @@ contributing nothing, when they are the only thing testing several classes.
 
 | Report | What it measures | How to produce it |
 |---|---|---|
-| **In-process** | The application's own 66 unit and integration tests | `mvn clean install` — automatic, no flags |
+| **In-process** | The application's own 72 unit and integration tests | `mvn clean install` — automatic, no flags |
 | **Full-stack** | The above **plus** the API, UI, BDD and reset suites driving the live application | `scripts/coverage.sh` |
 
 ```bash
@@ -137,7 +137,7 @@ already producing:
 
 | Job | What it contributes |
 |---|---|
-| `build` | `jacoco.exec` — the application's own 66 unit and integration tests |
+| `build` | `jacoco.exec` — the application's own 72 unit and integration tests |
 | `api-tests`, `ui-tests`, `bdd-tests` | one `jacoco-e2e.exec` each, written by the agent inside the application process those suites drove |
 | `coverage` | downloads all four, merges them, renders the report, sends it to Codecov and SonarQube Cloud |
 

@@ -43,6 +43,13 @@ management:
     health:
       show-details: always
 
+# The time zone the billing day is reckoned in. Every business date decision — above all whether an
+# invoice is OVERDUE — is made in this zone, not in the JVM's default one, so the same instant
+# produces the same invoice status on a developer laptop, a UTC CI runner and a production host.
+# Any IANA zone id is accepted; an unknown one fails startup rather than falling back silently.
+billing:
+  time-zone: America/Toronto
+
 # QA support endpoints (database reset) are disabled unless explicitly switched on.
 # CI and local automation runs enable them with --qa.test-support.enabled=true so that a
 # production-shaped deployment can never expose them by accident.
