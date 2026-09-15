@@ -82,6 +82,17 @@ public class Policy {
     invoice.setPolicy(this);
   }
 
+  /**
+   * Attaches a billed term to this policy.
+   *
+   * <p>Unlike invoices, terms are not held in a collection here. A term is owned by the billing account
+   * it is billed to, not by the policy it covers, and is persisted through that account. This method
+   * only sets the back-reference so a term can name its policy.
+   */
+  public void attachTerm(PolicyTerm term) {
+    term.setPolicy(this);
+  }
+
   public boolean isActive() {
     return status == PolicyStatus.ACTIVE;
   }
