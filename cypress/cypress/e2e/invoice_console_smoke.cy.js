@@ -24,8 +24,10 @@ describe('Invoice console smoke', () => {
 
     // The seeded baseline deliberately covers every invoice state; this asserts the console can
     // render each of them rather than only the happy one.
+    // The console is bilingual, so the words in a status pill are display copy. The state rides on
+    // data-status, which is the same in both languages - assert on that, not on the label.
     ['UNPAID', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED'].forEach((status) => {
-      cy.byTestId('invoice-status').contains(status).should('exist');
+      cy.get(`[data-testid="invoice-status"][data-status="${status}"]`).should('exist');
     });
   });
 
@@ -34,9 +36,9 @@ describe('Invoice console smoke', () => {
       cy.visit(`/invoices/${invoice.id}`);
 
       cy.byTestId('invoice-number').should('contain', invoice.invoiceNumber);
-      cy.byTestId('invoice-total').should('contain', '450.00');
-      cy.byTestId('invoice-outstanding-balance').should('contain', '450.00');
-      cy.byTestId('invoice-amount-paid').should('contain', '0.00');
+      cy.byTestId('invoice-total').should('have.attr', 'data-amount', '450.00');
+      cy.byTestId('invoice-outstanding-balance').should('have.attr', 'data-amount', '450.00');
+      cy.byTestId('invoice-amount-paid').should('have.attr', 'data-amount', '0.00');
       cy.byTestId('no-payments-message').should('exist');
     });
   });
@@ -51,9 +53,9 @@ describe('Invoice console smoke', () => {
       cy.byTestId('submit-payment-button').click();
 
       cy.byTestId('payment-success').should('exist');
-      cy.byTestId('invoice-status').should('contain', 'PARTIALLY_PAID');
-      cy.byTestId('invoice-amount-paid').should('contain', '100.00');
-      cy.byTestId('invoice-outstanding-balance').should('contain', '300.00');
+      cy.byTestId('invoice-status').should('have.attr', 'data-status', 'PARTIALLY_PAID');
+      cy.byTestId('invoice-amount-paid').should('have.attr', 'data-amount', '100.00');
+      cy.byTestId('invoice-outstanding-balance').should('have.attr', 'data-amount', '300.00');
       cy.byTestId('payment-row').should('have.length', 1);
     });
   });
@@ -66,7 +68,7 @@ describe('Invoice console smoke', () => {
       cy.byTestId('submit-payment-button').click();
 
       cy.byTestId('payment-error').should('contain', 'exceeds the outstanding balance');
-      cy.byTestId('invoice-outstanding-balance').should('contain', '100.00');
+      cy.byTestId('invoice-outstanding-balance').should('have.attr', 'data-amount', '100.00');
       cy.byTestId('payment-row').should('not.exist');
     });
   });

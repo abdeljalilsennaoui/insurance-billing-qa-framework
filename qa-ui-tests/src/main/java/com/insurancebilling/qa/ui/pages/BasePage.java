@@ -54,6 +54,18 @@ public abstract class BasePage {
     return driver.findElements(testId(id));
   }
 
+  /**
+   * Reads a semantic attribute rather than the words on screen.
+   *
+   * <p>The console is published in two languages, so its visible text is display copy and changes with
+   * the reader. State that automation asserts on - a status, an amount - rides on a data attribute that
+   * is the same in both. A suite reading the words would pass in English and fail in French while the
+   * application behaved identically.
+   */
+  protected String attributeOf(String id, String attribute) {
+    return visible(id).getDomAttribute(attribute);
+  }
+
   protected String textOf(String id) {
     return visible(id).getText().trim();
   }
