@@ -154,12 +154,25 @@ public class InvoicePaymentUiIT extends BaseUiTest {
   }
 
   @Test(groups = "ui-regression")
-  public void anOverdueInvoiceIsFlaggedOnItsDetailPage() {
+  public void anOverdueInvoiceSaysSoOnItsDetailPageWithoutRepeatingItself() {
     InvoiceDto invoice = testData.overdueInvoice("200.00");
 
     InvoiceDetailsPage page = new InvoiceDetailsPage().openById(invoice.id());
 
-    assertThat(page.isFlaggedOverdue()).isTrue();
     assertThat(page.status()).isEqualTo("OVERDUE");
+    assertThat(page.isFlaggedOverdue())
+        .as("the status already says Overdue; a flag beside it would say it twice")
+        .isFalse();
+  }
+
+  @Test(groups = "ui-regression")
+  public void aPartPaidInvoiceThatIsLateIsFlaggedOnItsDetailPage() {
+    InvoiceDto invoice = testData.partiallyPaidOverdueInvoice("200.00", "50.00");
+
+    InvoiceDetailsPage page = new InvoiceDetailsPage().openById(invoice.id());
+
+    assertThat(page.status()).isEqualTo("PARTIALLY_PAID");
+    assertThat(page.isFlaggedOverdue()).isTrue();
+    assertThat(page.outstandingBalance()).isEqualTo("150.00");
   }
 }

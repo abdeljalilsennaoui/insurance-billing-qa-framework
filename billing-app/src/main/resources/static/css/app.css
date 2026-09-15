@@ -262,3 +262,262 @@ button {
 button:hover {
   background: var(--accent-dark);
 }
+
+/* ---------------------------------------------------------------------------
+ * Billing account screens.
+ *
+ * A side navigation beside a working area, with the account's identifiers pinned
+ * above both. The layout collapses to a single column on a narrow screen rather
+ * than scrolling sideways — except the ledger and schedule tables, which have
+ * more columns than any phone has width and get their own horizontal scroll.
+ * ------------------------------------------------------------------------- */
+
+.context-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  padding: 0.7rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.context-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.context-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.context-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  /* Wider than the invoice console's 960px: the ledger has nine columns of figures and the running
+     balance is the one the reader came for, so it has to be on screen without scrolling to it. */
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.side-nav {
+  flex: 0 0 13rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.side-nav a {
+  padding: 0.55rem 0.75rem;
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--ink);
+  border-left: 3px solid transparent;
+}
+
+.side-nav a:hover {
+  background: var(--neutral);
+}
+
+.side-nav a.current {
+  background: var(--neutral);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+.workspace-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.panel-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.panel {
+  flex: 1 1 22rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+}
+
+.panel h2 {
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.panel dl {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr;
+  gap: 0.45rem 1rem;
+  margin: 0;
+}
+
+.panel dl.inline {
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.35rem 1.5rem;
+}
+
+.panel dl.inline dt {
+  grid-row: 1;
+}
+
+.panel dl.inline dd {
+  grid-row: 2;
+}
+
+.panel dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.panel dd {
+  margin: 0;
+}
+
+.panel dd.numeric {
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.term-header {
+  margin-bottom: 1rem;
+}
+
+.term-picker {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.term-picker a {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  background: var(--surface);
+}
+
+.term-picker a.current {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1rem;
+}
+
+.tabs a {
+  padding: 0.55rem 1rem;
+  text-decoration: none;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tabs a:hover {
+  color: var(--ink);
+}
+
+.tabs a.current {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* The ledger has nine columns. Rather than shrink them to illegibility, the table
+   scrolls inside its own box and the page does not. */
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.table-scroll table {
+  border: none;
+  min-width: 52rem;
+}
+
+/* Nine columns of figures. Tighter padding and a slightly smaller face let the whole ledger -
+   including the running balance, which is the column the reader came for - fit a laptop screen
+   without shrinking anything to illegibility. Narrower screens still scroll. */
+.table-scroll td,
+.table-scroll th {
+  white-space: nowrap;
+  padding: 0.5rem 0.55rem;
+  font-size: 0.93rem;
+}
+
+.table-scroll th {
+  font-size: 0.78rem;
+}
+
+.term-IN_FORCE {
+  background: #e3f3ea;
+  color: var(--good);
+}
+
+.term-PENDING {
+  background: var(--neutral);
+  color: var(--muted);
+}
+
+.term-EXPIRED,
+.term-CANCELLED {
+  background: #fae8e8;
+  color: var(--bad);
+}
+
+.installment-PAID {
+  background: #e3f3ea;
+  color: var(--good);
+}
+
+.installment-SCHEDULED {
+  background: var(--neutral);
+  color: var(--muted);
+}
+
+.installment-BILLED {
+  background: #fdf3e0;
+  color: var(--warn);
+}
+
+.installment-OVERDUE,
+.installment-REVERSED {
+  background: #fae8e8;
+  color: var(--bad);
+}
+
+@media (max-width: 720px) {
+  .workspace {
+    flex-direction: column;
+  }
+
+  .side-nav {
+    flex: 1 1 auto;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}

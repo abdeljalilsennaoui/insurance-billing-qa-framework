@@ -57,13 +57,29 @@ public class InvoiceListUiIT extends BaseUiTest {
   }
 
   @Test(groups = "ui-regression")
-  public void anOverdueInvoiceIsFlaggedInTheList() {
+  public void anOverdueInvoiceSaysSoInItsStatusWithoutRepeatingItself() {
     InvoiceDto invoice = testData.overdueInvoice("200.00");
 
     InvoiceListPage list = new InvoiceListPage().open();
 
-    assertThat(list.isFlaggedOverdue(invoice.invoiceNumber())).isTrue();
     assertThat(list.statusOf(invoice.invoiceNumber())).isEqualTo("OVERDUE");
+    assertThat(list.isFlaggedOverdue(invoice.invoiceNumber()))
+        .as("the status already says Overdue; a flag beside it would say it twice")
+        .isFalse();
+  }
+
+  @Test(groups = "ui-regression")
+  public void aPartPaidInvoiceThatIsLateIsFlaggedBecauseItsStatusCannotSaySo() {
+    InvoiceDto invoice = testData.partiallyPaidOverdueInvoice("200.00", "50.00");
+
+    InvoiceListPage list = new InvoiceListPage().open();
+
+    assertThat(list.statusOf(invoice.invoiceNumber()))
+        .as("payment progress is not hidden behind OVERDUE")
+        .isEqualTo("PARTIALLY_PAID");
+    assertThat(list.isFlaggedOverdue(invoice.invoiceNumber()))
+        .as("which is exactly why the lateness has to be flagged separately")
+        .isTrue();
   }
 
   @Test(groups = "ui-regression")

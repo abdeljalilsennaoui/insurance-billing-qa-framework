@@ -101,6 +101,20 @@ public class BillingTestData {
     return invoices.create(policyId, new BigDecimal(totalAmount), LocalDate.now(), dueDate);
   }
 
+  /**
+   * An invoice that is part paid and past its due date.
+   *
+   * <p>The only state in which the overdue flag carries information: the status reads PARTIALLY_PAID,
+   * because hiding payment progress behind OVERDUE would be worse, so the lateness has to be said
+   * somewhere else.
+   */
+  public InvoiceDto partiallyPaidOverdueInvoice(String totalAmount, String alreadyPaid) {
+    InvoiceDto invoice =
+        invoiceOn(activePolicy().id(), totalAmount, LocalDate.now().minusDays(10));
+    invoices.pay(invoice.id(), alreadyPaid);
+    return invoices.get(invoice.id());
+  }
+
   /** A new billing account, collected by pre-authorised debit, for a new customer. */
   public BillingAccountDto account() {
     return billing.openAccount(customer().id(), "QA Tester", "742");

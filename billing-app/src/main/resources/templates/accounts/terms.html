@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="#{term.title}">Terms</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div th:replace="~{fragments/account :: context(${account})}"></div>
+
+<div class="workspace">
+  <div th:replace="~{fragments/account :: nav(${account}, ${activeNav})}"></div>
+
+  <main class="workspace-main">
+    <h1 data-testid="page-title" th:text="#{term.title}">Terms</h1>
+
+    <p th:if="${selectedTerm == null}" data-testid="no-terms-message" th:text="#{account.terms.empty}">
+      No terms are billed to this account.
+    </p>
+
+    <div th:if="${selectedTerm != null}">
+      <!-- One tab strip per term. With more than one term the strip repeats, which is the honest
+           rendering: each term has its own schedule and its own ledger. -->
+      <div class="term-picker" th:if="${account.terms.size() > 1}" data-testid="term-picker">
+        <a th:each="t : ${account.terms}"
+           data-testid="term-option"
+           th:attr="data-term=${t.termReference}"
+           th:classappend="${t.termReference == selectedTerm.termReference} ? 'current' : ''"
+           th:href="@{/accounts/{ref}/terms(ref=${account.accountReference}, term=${t.termReference})}"
+           th:text="${t.policyNumber}"></a>
+      </div>
+
+      <section class="panel term-header" data-testid="term-header"
+               th:attr="data-term=${selectedTerm.termReference}">
+        <dl class="inline">
+          <dt th:text="#{term.effective}">Effective date</dt>
+          <dd data-testid="term-effective-date"
+              th:attr="data-date=${selectedTerm.effectiveDate}"
+              th:text="${@billingFormats.date(selectedTerm.effectiveDate, #locale)}"></dd>
+
+          <dt th:text="#{term.expiry}">Expiry date</dt>
+          <dd data-testid="term-expiry-date"
+              th:attr="data-date=${selectedTerm.expiryDate}"
+              th:text="${@billingFormats.date(selectedTerm.expiryDate, #locale)}"></dd>
+
+          <dt th:text="#{term.billingType}">Billing type</dt>
+          <dd data-testid="term-billing-type"
+              th:attr="data-billing-type=${selectedTerm.billingType}"
+              th:text="#{'billingType.' + ${selectedTerm.billingType}}"></dd>
+
+          <dt th:text="#{term.status}">Billing term status</dt>
+          <dd>
+            <span class="status" data-testid="term-status"
+                  th:attr="data-status=${selectedTerm.status}"
+                  th:classappend="'term-' + ${selectedTerm.status}"
+                  th:text="#{'termStatus.' + ${selectedTerm.status}}"></span>
+          </dd>
+
+          <dt th:text="#{term.installmentsRemaining}">Installments remaining</dt>
+          <dd class="numeric" data-testid="installments-remaining"
+              th:text="${selectedTerm.installmentsRemaining}"></dd>
+        </dl>
+      </section>
+
+      <!-- Tabs are links with a URL each, so every panel can be opened directly and bookmarked. -->
+      <nav class="tabs" data-testid="term-tabs">
+        <a data-testid="tab-summary"
+           th:classappend="${activeTab == 'summary'} ? 'current' : ''"
+           th:href="@{/accounts/{ref}/terms(ref=${account.accountReference}, term=${selectedTerm.termReference}, tab='summary')}"
+           th:text="#{term.tab.summary}">Summary</a>
+        <a data-testid="tab-transactions"
+           th:classappend="${activeTab == 'transactions'} ? 'current' : ''"
+           th:href="@{/accounts/{ref}/terms(ref=${account.accountReference}, term=${selectedTerm.termReference}, tab='transactions')}"
+           th:text="#{term.tab.transactions}">Transaction history</a>
+        <a data-testid="tab-schedule"
+           th:classappend="${activeTab == 'schedule'} ? 'current' : ''"
+           th:href="@{/accounts/{ref}/terms(ref=${account.accountReference}, term=${selectedTerm.termReference}, tab='schedule')}"
+           th:text="#{term.tab.schedule}">Payment schedule</a>
+      </nav>
+
+      <section th:if="${activeTab == 'summary'}" class="panel" data-testid="term-summary">
+        <h2 th:text="#{term.summary.heading}">Balance information</h2>
+        <dl>
+          <dt th:text="#{term.summary.premium}">Premium</dt>
+          <dd class="numeric" data-testid="term-premium"
+              th:attr="data-amount=${selectedTerm.termPremium}"
+              th:text="${@billingFormats.money(selectedTerm.termPremium, #locale)}"></dd>
+
+          <dt th:text="#{term.summary.tax}">Tax</dt>
+          <dd class="numeric" data-testid="term-tax"
+              th:attr="data-amount=${selectedTerm.termTax}"
+              th:text="${@billingFormats.money(selectedTerm.termTax, #locale)}"></dd>
+
+          <dt th:text="#{term.summary.fees}">Installment fees</dt>
+          <dd class="numeric" data-testid="term-fees"
+              th:attr="data-amount=${selectedTerm.scheduledTotal.subtract(selectedTerm.termPremium).subtract(selectedTerm.termTax)}"
+              th:text="${@billingFormats.money(selectedTerm.scheduledTotal.subtract(selectedTerm.termPremium).subtract(selectedTerm.termTax), #locale)}"></dd>
+
+          <dt th:text="#{term.summary.scheduledTotal}">Term total</dt>
+          <dd class="numeric" data-testid="term-scheduled-total"
+              th:attr="data-amount=${selectedTerm.scheduledTotal}"
+              th:text="${@billingFormats.money(selectedTerm.scheduledTotal, #locale)}"></dd>
+
+          <dt th:text="#{term.summary.balance}">Balance</dt>
+          <dd class="numeric emphasis" data-testid="term-balance"
+              th:attr="data-amount=${selectedTerm.balance}"
+              th:text="${@billingFormats.money(selectedTerm.balance, #locale)}"></dd>
+        </dl>
+      </section>
+
+      <section th:if="${activeTab == 'transactions'}" data-testid="term-transactions">
+        <p th:if="${ledger.isEmpty()}" data-testid="no-transactions-message" th:text="#{ledger.empty}"></p>
+        <div th:unless="${ledger.isEmpty()}" class="table-scroll">
+          <table data-testid="ledger-table">
+            <thead>
+            <tr>
+              <th th:text="#{ledger.column.processed}">Processed</th>
+              <th th:text="#{ledger.column.effective}">Effective date</th>
+              <th th:text="#{ledger.column.description}">Description</th>
+              <th class="numeric" th:text="#{ledger.column.amount}">Amount</th>
+              <th class="numeric" th:text="#{ledger.column.premium}">Premium</th>
+              <th class="numeric" th:text="#{ledger.column.tax}">Tax</th>
+              <th class="numeric" th:text="#{ledger.column.fee}">Fees</th>
+              <th class="numeric" th:text="#{ledger.column.suspense}">Suspense</th>
+              <th class="numeric" th:text="#{ledger.column.balance}">Balance</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="line : ${ledger}" data-testid="ledger-row"
+                th:attr="data-transaction=${line.reference}, data-type=${line.type}">
+              <td data-testid="ledger-processed"
+                  th:attr="data-processed-at=${line.processedAt}"
+                  th:text="${@billingFormats.dateTime(line.processedAt, #locale)}"></td>
+              <td data-testid="ledger-effective"
+                  th:text="${@billingFormats.date(line.effectiveDate, #locale)}"></td>
+              <td data-testid="ledger-description" th:text="#{'transaction.' + ${line.type}}"></td>
+              <td class="numeric" data-testid="ledger-amount"
+                  th:attr="data-amount=${line.amount}"
+                  th:text="${@billingFormats.money(line.amount, #locale)}"></td>
+              <td class="numeric" data-testid="ledger-premium"
+                  th:attr="data-amount=${line.premiumAmount}"
+                  th:text="${@billingFormats.money(line.premiumAmount, #locale)}"></td>
+              <td class="numeric" data-testid="ledger-tax"
+                  th:attr="data-amount=${line.taxAmount}"
+                  th:text="${@billingFormats.money(line.taxAmount, #locale)}"></td>
+              <td class="numeric" data-testid="ledger-fee"
+                  th:attr="data-amount=${line.feeAmount}"
+                  th:text="${@billingFormats.money(line.feeAmount, #locale)}"></td>
+              <td class="numeric" data-testid="ledger-suspense"
+                  th:attr="data-amount=${line.suspenseAmount}"
+                  th:text="${@billingFormats.money(line.suspenseAmount, #locale)}"></td>
+              <td class="numeric emphasis" data-testid="ledger-balance"
+                  th:attr="data-amount=${line.balanceAfter}"
+                  th:text="${@billingFormats.money(line.balanceAfter, #locale)}"></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section th:if="${activeTab == 'schedule'}" data-testid="term-schedule">
+        <p th:if="${schedule.isEmpty()}" data-testid="no-schedule-message" th:text="#{schedule.empty}"></p>
+        <div th:unless="${schedule.isEmpty()}" class="table-scroll">
+          <table data-testid="schedule-table">
+            <thead>
+            <tr>
+              <th class="numeric" th:text="#{schedule.column.sequence}">Number</th>
+              <th th:text="#{schedule.column.scheduled}">Scheduled date</th>
+              <th th:text="#{schedule.column.due}">Due date</th>
+              <th class="numeric" th:text="#{schedule.column.premium}">Premium</th>
+              <th class="numeric" th:text="#{schedule.column.tax}">Tax</th>
+              <th class="numeric" th:text="#{schedule.column.fee}">Fee</th>
+              <th class="numeric" th:text="#{schedule.column.amount}">Amount due</th>
+              <th th:text="#{schedule.column.status}">Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="installment : ${schedule}" data-testid="installment-row"
+                th:attr="data-installment=${installment.sequenceNumber}">
+              <td class="numeric" data-testid="installment-sequence"
+                  th:text="${installment.sequenceNumber}"></td>
+              <td data-testid="installment-scheduled-date"
+                  th:attr="data-date=${installment.scheduledDate}"
+                  th:text="${@billingFormats.date(installment.scheduledDate, #locale)}"></td>
+              <td data-testid="installment-due-date"
+                  th:attr="data-date=${installment.dueDate}"
+                  th:text="${@billingFormats.date(installment.dueDate, #locale)}"></td>
+              <td class="numeric" data-testid="installment-premium"
+                  th:attr="data-amount=${installment.premiumAmount}"
+                  th:text="${@billingFormats.money(installment.premiumAmount, #locale)}"></td>
+              <td class="numeric" data-testid="installment-tax"
+                  th:attr="data-amount=${installment.taxAmount}"
+                  th:text="${@billingFormats.money(installment.taxAmount, #locale)}"></td>
+              <td class="numeric" data-testid="installment-fee"
+                  th:attr="data-amount=${installment.feeAmount}"
+                  th:text="${@billingFormats.money(installment.feeAmount, #locale)}"></td>
+              <td class="numeric emphasis" data-testid="installment-amount"
+                  th:attr="data-amount=${installment.amountDue}"
+                  th:text="${@billingFormats.money(installment.amountDue, #locale)}"></td>
+              <td>
+                <span class="status" data-testid="installment-status"
+                      th:attr="data-status=${installment.status}"
+                      th:classappend="'installment-' + ${installment.status}"
+                      th:text="#{'installment.' + ${installment.status}}"></span>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

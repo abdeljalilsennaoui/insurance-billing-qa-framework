@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="#{account.summary.title}">Account summary</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div th:replace="~{fragments/account :: context(${account})}"></div>
+
+<div class="workspace">
+  <div th:replace="~{fragments/account :: nav(${account}, ${activeNav})}"></div>
+
+  <main class="workspace-main">
+    <h1 data-testid="page-title" th:text="#{account.summary.title}">Account summary</h1>
+
+    <div class="panel-row">
+      <section class="panel" data-testid="billing-information">
+        <h2 th:text="#{account.billing.heading}">Billing information</h2>
+        <dl>
+          <dt th:text="#{account.billing.nextPaymentDate}">Next payment date</dt>
+          <dd data-testid="next-payment-date"
+              th:attr="data-date=${account.nextPaymentDate}"
+              th:text="${account.nextPaymentDate != null}
+                       ? ${@billingFormats.date(account.nextPaymentDate, #locale)}
+                       : #{common.none}"></dd>
+
+          <dt th:text="#{account.billing.nextPaymentAmount}">Next payment amount</dt>
+          <dd class="numeric" data-testid="next-payment-amount"
+              th:attr="data-amount=${account.nextPaymentAmount}"
+              th:text="${account.nextPaymentAmount != null}
+                       ? ${@billingFormats.money(account.nextPaymentAmount, #locale)}
+                       : #{common.none}"></dd>
+
+          <dt th:text="#{account.billing.unapplied}">Unapplied amount</dt>
+          <dd class="numeric" data-testid="unapplied-amount"
+              th:attr="data-amount=${account.unappliedAmount}"
+              th:text="${@billingFormats.money(account.unappliedAmount, #locale)}"></dd>
+
+          <dt th:text="#{account.billing.totalBalance}">Total balance</dt>
+          <dd class="numeric emphasis" data-testid="total-balance"
+              th:attr="data-amount=${account.totalBalance}"
+              th:text="${@billingFormats.money(account.totalBalance, #locale)}"></dd>
+
+          <dt th:text="#{account.billing.nsfToDate}">Insufficient funds to date</dt>
+          <dd class="numeric" data-testid="nsf-count" th:text="${account.nsfCount}"></dd>
+
+          <dt th:text="#{account.billing.returnedToDate}">Returned payments to date</dt>
+          <dd class="numeric" data-testid="returned-payment-count"
+              th:text="${account.returnedPaymentCount}"></dd>
+        </dl>
+      </section>
+
+      <section class="panel" data-testid="payment-information">
+        <h2 th:text="#{account.payment.heading}">Current payment information</h2>
+        <p th:if="${account.paymentInformation.accountNumber == null}"
+           data-testid="no-payment-method" th:text="#{account.payment.none}">
+          No payment method is on file for this account.
+        </p>
+        <dl th:if="${account.paymentInformation.accountNumber != null}">
+          <dt th:text="#{account.payment.plan}">Payment plan</dt>
+          <dd data-testid="payment-plan"
+              th:attr="data-plan=${account.paymentInformation.paymentPlan}"
+              th:text="#{'plan.' + ${account.paymentInformation.paymentPlan}}"></dd>
+
+          <dt th:text="#{account.payment.holder}">Bank account holder</dt>
+          <dd data-testid="bank-account-holder" th:text="${account.paymentInformation.accountHolder}"></dd>
+
+          <dt th:text="#{account.payment.institution}">Institution number</dt>
+          <dd data-testid="bank-institution" th:text="${account.paymentInformation.institutionNumber}"></dd>
+
+          <dt th:text="#{account.payment.branch}">Branch number</dt>
+          <dd data-testid="bank-branch" th:text="${account.paymentInformation.branchNumber}"></dd>
+
+          <!--
+            Rendered from the masked value the API returns. There is no unmasked value anywhere in the
+            model to render by mistake: the domain never holds one. See BankAccountReference.
+          -->
+          <dt th:text="#{account.payment.account}">Bank account number</dt>
+          <dd data-testid="bank-account-number" th:text="${account.paymentInformation.accountNumber}"></dd>
+
+          <dt th:text="#{account.payment.method}">Payment method</dt>
+          <dd data-testid="payment-method"
+              th:attr="data-method=${account.paymentInformation.paymentMethod}"
+              th:text="#{'method.' + ${account.paymentInformation.paymentMethod}}"></dd>
+        </dl>
+      </section>
+    </div>
+
+    <p th:if="${account.terms.isEmpty()}" data-testid="no-terms-message" th:text="#{account.terms.empty}">
+      No terms are billed to this account.
+    </p>
+  </main>
+</div>
+</body>
+</html>

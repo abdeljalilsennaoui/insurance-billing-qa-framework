@@ -7,7 +7,9 @@ import com.insurancebilling.qa.api.model.InvoiceDto;
 import com.insurancebilling.qa.ui.config.UiConfig;
 import com.insurancebilling.qa.ui.driver.DriverFactory;
 import com.insurancebilling.qa.ui.pages.InvoiceDetailsPage;
+import com.insurancebilling.qa.ui.pages.AccountSummaryPage;
 import com.insurancebilling.qa.ui.pages.InvoiceListPage;
+import com.insurancebilling.qa.ui.pages.TermsPage;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import java.io.IOException;
@@ -144,21 +146,57 @@ public final class DocumentationScreenshots {
 
     driver.get(UiConfig.baseUrl() + "/invoices/999999");
     capture("08-invoice-not-found", "Unknown invoice: the console's own 404 page, not a JSON error body");
+
+    captureBillingAccounts();
+  }
+
+  /**
+   * The billing account screens, against the seeded accounts.
+   *
+   * <p>Read-only and taken from seeded data on purpose: these are the screens whose whole point is a
+   * particular set of figures - an evenly divisible schedule, an uneven one, and a returned payment -
+   * and a screenshot of numbers a test invented would show none of that.
+   *
+   * <p>The baseline is restored first because the captures above create and pay invoices.
+   */
+  private void captureBillingAccounts() {
+    restoreSeededBaseline();
+
+    // The uneven account: 1000.00 over twelve does not divide, and a payment on it was returned.
+    new AccountSummaryPage().open("ACCT-100002");
+    capture(
+        "09-account-summary",
+        "Account summary: balance, next payment, and the two failed-payment tallies");
+
+    TermsPage terms = new TermsPage().open("ACCT-100002", "schedule");
+    capture(
+        "10-term-schedule",
+        "Payment schedule: the down payment carries the rounding remainder, and one installment was reversed");
+
+    terms.openTab("transactions");
+    capture(
+        "11-term-transactions",
+        "Transaction history: new business, a payment, its reversal and the fee, with a running balance");
+
+    new AccountSummaryPage().open("ACCT-100001").switchLanguageTo("fr");
+    capture(
+        "12-account-summary-french",
+        "The same screen in French: the figures are identical, the words and the number format are not");
   }
 
   /** The HTML reports produced by the suites and by the coverage and performance tooling. */
   private void captureReports() {
     captureLocalReport(
         "billing-app/target/site/jacoco-full/index.html",
-        "09-coverage-jacoco",
+        "13-coverage-jacoco",
         "JaCoCo full-stack coverage report");
     captureLocalReport(
         "qa-bdd-tests/target/cucumber-reports/api.html",
-        "10-cucumber-api-scenarios",
+        "14-cucumber-api-scenarios",
         "Cucumber report for the API scenarios");
     captureLocalReport(
         "qa-bdd-tests/target/cucumber-reports/ui.html",
-        "11-cucumber-ui-scenarios",
+        "15-cucumber-ui-scenarios",
         "Cucumber report for the browser scenarios");
     captureLatestJmeterDashboard();
   }
@@ -231,7 +269,7 @@ public final class DocumentationScreenshots {
               latest ->
                   captureLocalReport(
                       latest.resolve("index.html").toString(),
-                      "12-jmeter-dashboard",
+                      "16-jmeter-dashboard",
                       "JMeter dashboard for the invoice API load test"),
               () -> System.out.println("Skipping the JMeter dashboard: no report-* directory"));
     } catch (IOException unreadable) {

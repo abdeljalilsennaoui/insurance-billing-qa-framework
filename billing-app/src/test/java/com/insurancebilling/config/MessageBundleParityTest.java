@@ -120,7 +120,9 @@ class MessageBundleParityTest {
             "nav.language.english",
             "nav.language.french",
             "invoices.column.total",
-            "invoice.total");
+            "invoice.total",
+            // French spells these exactly as English does.
+            "ledger.column.description");
 
     Set<String> untranslated =
         english.stringPropertyNames().stream()
