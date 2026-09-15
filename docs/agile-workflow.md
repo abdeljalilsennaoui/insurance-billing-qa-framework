@@ -30,7 +30,7 @@ the same structure a well-written Jira story uses; only the field names differ.
 |---|---|---|
 | Issue labelled `feature` | Story | e.g. #5 "Implement invoice REST API" |
 | Issue labelled `testing` / `automation` | Task, or a Story when it delivers a capability | e.g. #8 "Build REST Assured API test framework" |
-| Issue labelled `bug` | Bug | The nine defects in `defect-reports.md` would each be a Bug here; in this project they were fixed inside the PR that found them and recorded in the defect log |
+| Issue labelled `bug` | Bug | The <!--count:defects-->14<!--/count--> defects in `defect-reports.md` would each be a Bug here; in this project they were fixed inside the PR that found them and recorded in the defect log |
 | Issue labelled `documentation` | Task | |
 | Milestone `v1.0` | Fix Version, or Epic | |
 | Acceptance criteria checkboxes | Acceptance Criteria field | |
@@ -50,7 +50,7 @@ Progress, In Review, Done — and the "In Review" column is where a QA engineer 
 | **Development** | Write tests alongside the feature. In this project the API integration tests found DEF-001 and DEF-002 on the day the endpoints were written, not a sprint later. |
 | **Code review** | Review the tests as carefully as the code. A test asserting only a status code, where two different rules both return 422, would pass review while proving nothing. |
 | **Sprint review** | Demonstrate against acceptance criteria, including the refusal paths. A demo that only shows the happy path hides exactly the behaviour most likely to be wrong. |
-| **Retrospective** | Feed defect patterns back. The pattern here: three of nine defects were in the *test infrastructure* and two produced green output while testing nothing — which argues for verifying that tooling does what it was told, not only that it reports success. |
+| **Retrospective** | Feed defect patterns back. The pattern here: <!--count:infra-defects-->4<!--/count--> of <!--count:defects-->14<!--/count--> defects were in the *test infrastructure* and two produced green output while testing nothing — which argues for verifying that tooling does what it was told, not only that it reports success. |
 
 ## Test management in Zephyr
 
@@ -83,7 +83,7 @@ Epic: Invoice billing
     └── Test: TC-019  Console legible at common widths   [manual]
 ```
 
-The automated/manual flag matters: a test-management tool that reports 100% automation while four cases
+The automated/manual flag matters: a test-management tool that reports 100% automation while <!--count:manual-cases-->6<!--/count--> cases
 are in fact manual is worse than one reporting 82% honestly, because the first number gets quoted in a
 release decision.
 

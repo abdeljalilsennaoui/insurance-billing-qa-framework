@@ -2,7 +2,7 @@
 #
 # Fails if a headline figure quoted in the documentation disagrees with docs/test-inventory.md.
 #
-# This is the regression guard for DEF-013. The counts in the README and the docs used to be typed by
+# This is the regression guard for DEF-014. The counts in the README and the docs used to be typed by
 # hand in eight places; they drifted apart from the suite and from each other, and nothing noticed
 # because no test reads prose. This does.
 #

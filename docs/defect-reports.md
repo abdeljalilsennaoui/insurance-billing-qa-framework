@@ -1,13 +1,13 @@
 # Defect reports
 
-Fourteen defects found while building and stabilising this project. Every one was actually encountered —
+<!--count:defects-->14<!--/count--> defects found while building and stabilising this project. Every one was actually encountered —
 none is an illustrative example written to fill a template. Each is linked to the commit that fixed it,
 so the claim can be checked against the history.
 
-Three of them (DEF-005, DEF-007, DEF-008) were defects in the **test infrastructure** rather than in the
-application. Those are the most dangerous class of defect in a QA project, because they make green runs
-untrustworthy: two of the three produced a passing or apparently-healthy result while testing nothing,
-or testing the wrong thing.
+<!--count:infra-defects-->4<!--/count--> of them (DEF-005, DEF-007, DEF-008, DEF-010) were defects in the **test infrastructure** rather
+than in the application. Those are the most dangerous class of defect in a QA project, because they can
+make green runs untrustworthy: two of the four produced a passing or apparently-healthy result while
+testing nothing, or testing the wrong thing. The other two failed loudly, which is the lesser harm.
 
 | ID | Title | Severity | Found by | Fixed in |
 |---|---|---|---|---|
@@ -560,6 +560,33 @@ ages the moment the thing it describes changes.
 - CI runs that check, so the pipeline fails on a stale number exactly as it fails on a broken test.
 
 Every figure in the table above was reconciled in the same change.
+
+**Follow-up — the first fix guarded the suite but not the catalogues beside it.** The markers above
+cover only what a *run* produces: tests per layer, and their total. The counts the documentation keeps
+about *itself* — defects logged, requirements traced, manual cases written — had no entry in the
+inventory, so nothing checked them, and **eight figures across three documents were still stale after
+this defect was first closed**: `README.md` claimed 12 defects, 22 manual cases and 23 requirements
+against an actual 14, 34 and 33; `agile-workflow.md` still said nine defects and four manual cases; and
+`design-rationale.md` said "all twelve". CI stayed green throughout, because none of those numbers was
+marked.
+
+Two smaller errors travelled with it. The change attributed its own fix to **DEF-013** — the
+language-switch defect — in four places, one of them the string the generator writes into the inventory,
+so regenerating reproduced the error. And the count of test-infrastructure defects had itself drifted:
+three documents named DEF-005, DEF-007 and DEF-008, all written before DEF-010 was logged against the
+same component. Four is the honest figure, of which two produced a green or healthy result; the other
+two failed loudly.
+
+**What closed it.** `docs/test-inventory.md` now carries a **Document catalogue** derived from the
+documents that own those lists — the defect log *is* the list of defects — and the marker vocabulary
+gained `defects`, `infra-defects`, `requirements`, `cases` and `manual-cases`. The check covers 45
+figures, up from 27.
+
+**Lesson, sharpened.** A guard is only as wide as the figures somebody thought to mark. The first fix
+removed the human step for the numbers that had just gone wrong, and left the numbers sitting next to
+them — which had gone wrong the same way, in the same files — to the memory that had already failed
+once. Worth asking of any new check: what sits beside the thing I am checking, and why is it not
+checked too?
 
 **Why a marker rather than parsing the prose.** A check that guessed which numbers in a document were
 test counts would have to ignore the seeded amounts, the performance figures, the coverage percentages

@@ -1,5 +1,8 @@
 # Test execution report
 
+> Mirrors [`docs/test-report.md`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/docs/test-report.md) in the repository, which is the
+> canonical copy. Related pages: [Coverage and quality](Coverage-and-Quality) · [Running the suites](Running-the-Suites).
+
 A record of one complete run of every suite in this repository, against one application instance, on
 one machine, with the evidence it produced.
 
@@ -9,7 +12,7 @@ one machine, with the evidence it produced.
 | **Commit under test** | `4f2cfde` (`main`), with the 1.2.0 version bump applied |
 | **Application version** | `billing-app` 1.2.0, Spring Boot 3.5.16 |
 | **Executed by** | Abdeljalil Sennaoui, locally |
-| **Result** | **<!--count:total-->477<!--/count--> tests executed, 477 passed, 0 failed, 0 skipped** |
+| **Result** | **477 tests executed, 477 passed, 0 failed, 0 skipped** |
 
 Everything below was produced by the run described in [How the run was performed](#how-the-run-was-performed).
 Nothing in this document is an expected value copied from a specification: the counts come from the
@@ -27,17 +30,17 @@ application itself while the suites were running against it.
 
 | Suite | Tests | Passed | Failed | Duration | Runner |
 |---|---:|---:|---:|---:|---|
-| Domain and service unit | <!--count:unit-->151<!--/count--> | 151 | 0 | — | JUnit 5 |
-| Application integration (API + web layer) | <!--count:integration-->103<!--/count--> | 103 | 0 | — | JUnit 5 + MockMvc |
+| Domain and service unit | 151 | 151 | 0 | — | JUnit 5 |
+| Application integration (API + web layer) | 103 | 103 | 0 | — | JUnit 5 + MockMvc |
 | *(the two above, as one Maven invocation)* | 254 | 254 | 0 | 9.1 s | |
 | API automation (incl. 7 SOAP) | 104 | 104 | 0 | 2.8 s | TestNG + REST Assured |
-| UI automation | <!--count:ui-->60<!--/count--> | 60 | 0 | 1 min 58 s | TestNG + Selenium 4 |
-| BDD scenarios (24 API + 19 UI) | <!--count:bdd-->43<!--/count--> | 43 | 0 | 42.6 s | Cucumber 7 + TestNG |
-| Smoke | <!--count:cypress-->12<!--/count--> | 12 | 0 | 2 s | Cypress 15 |
+| UI automation | 60 | 60 | 0 | 1 min 58 s | TestNG + Selenium 4 |
+| BDD scenarios (24 API + 19 UI) | 43 | 43 | 0 | 42.6 s | Cucumber 7 + TestNG |
+| Smoke | 12 | 12 | 0 | 2 s | Cypress 15 |
 | Reset endpoint (`test-support` group) | 4 | 4 | 0 | 1.8 s | TestNG + REST Assured |
 | **Total** | **477** | **477** | **0** | **≈ 3 min 15 s** | |
 
-The API automation total is <!--count:api-->108<!--/count--> including the four `test-support` tests,
+The API automation total is 108 including the four `test-support` tests,
 which run separately for the reason given below.
 
 The BDD run reports 43 scenarios over **238 steps** (96 API + 142 UI), all passing.
@@ -48,7 +51,7 @@ adds measurement overhead, so these are not performance numbers — for those se
 [section 7](#7-performance).
 
 **These counts are not typed.** `scripts/count-tests.sh` reads them out of the surefire and failsafe
-XML and the Cucumber JSON this run produced, into [`test-inventory.md`](test-inventory.md), and
+XML and the Cucumber JSON this run produced, into [`test-inventory.md`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/docs/test-inventory.md), and
 `scripts/check-doc-numbers.sh` fails the build if a figure quoted in this document disagrees with it.
 That is the fix for DEF-014 — see [section 10](#10-defects).
 
@@ -77,7 +80,7 @@ That is the fix for DEF-014 — see [section 10](#10-defects).
 | QA reset endpoint | API (`test-support` group, run alone) |
 
 Requirement-by-requirement mapping, by test class and method name, is in
-[`requirements-traceability-matrix.md`](requirements-traceability-matrix.md) — <!--count:requirements-->33<!--/count--> requirements, each
+[`requirements-traceability-matrix.md`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/docs/requirements-traceability-matrix.md) — 33 requirements, each
 automated at least once. Every method name in that document was checked against the source before this
 release; two that had gone stale were corrected.
 
@@ -176,7 +179,7 @@ afterwards rather than from a partially-completed one.
 ## 5. Evidence
 
 Screenshots are captured by
-[`DocumentationScreenshots`](../qa-ui-tests/src/main/java/com/insurancebilling/qa/ui/docs/DocumentationScreenshots.java),
+[`DocumentationScreenshots`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/qa-ui-tests/src/main/java/com/insurancebilling/qa/ui/docs/DocumentationScreenshots.java),
 which drives the application through the **same page objects and the same locators as the UI suite**,
 in the same headless Chrome at the same viewport. The images therefore show the application as the
 tests see it, and they break when the page objects break rather than drifting quietly out of date.
@@ -187,22 +190,22 @@ capture then pays or cancels is created by the capture itself.
 
 ### 5.1 The invoice console
 
-![Invoice console listing all invoices](screenshots/01-invoice-console-all.png)
+![Invoice console listing all invoices](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/01-invoice-console-all.png)
 
 The seeded baseline: six invoices covering every state the domain can be in — unpaid, cancelled,
 overdue, partially paid and paid — across three customers and four policies. Outstanding balances are
 derived, not stored. This is the fixture every read-only scenario asserts against.
 
-![Invoice console filtered to overdue invoices](screenshots/02-invoice-console-filtered-overdue.png)
+![Invoice console filtered to overdue invoices](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/02-invoice-console-filtered-overdue.png)
 
 The status filter applied. Proves `GET /invoices?status=OVERDUE` narrows the table and that the overdue
 flag is rendered next to the status badge. The UI suite waits for a *new document* here rather than for
-an element to go stale — see DEF-011 in [`defect-reports.md`](defect-reports.md) for why that
+an element to go stale — see DEF-011 in [`defect-reports.md`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/docs/defect-reports.md) for why that
 distinction cost a day.
 
 ### 5.2 Invoice detail and payment history
 
-![Invoice detail page for a partially paid invoice](screenshots/03-invoice-detail-partially-paid.png)
+![Invoice detail page for a partially paid invoice](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/03-invoice-detail-partially-paid.png)
 
 A seeded invoice with two instalments already received: total 360.00, paid 180.00, outstanding 180.00,
 status `PARTIALLY_PAID`. Summary figures, payment history and the payment form are all on one page, and
@@ -210,7 +213,7 @@ every element the suite touches carries a `data-testid`.
 
 ### 5.3 A payment that is accepted
 
-![Payment accepted, with confirmation banner and updated balance](screenshots/04-payment-accepted.png)
+![Payment accepted, with confirmation banner and updated balance](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/04-payment-accepted.png)
 
 120.00 paid against a 480.00 invoice through the console form. The banner confirms the amount, the
 summary moves to paid 120.00 / outstanding 360.00 / `PARTIALLY_PAID`, and the payment appears in the
@@ -221,27 +224,27 @@ attempt below, which re-renders in place and keeps the rejected value in the fie
 
 ### 5.4 Payments that are refused, and *why* they are refused
 
-![Payment refused because it exceeds the outstanding balance](screenshots/05-payment-rejected-exceeds-balance.png)
+![Payment refused because it exceeds the outstanding balance](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/05-payment-rejected-exceeds-balance.png)
 
 10,000.00 against a 360.00 balance. The API answers this with `422 EXCEEDS_OUTSTANDING_BALANCE` — a
 billing rule refusing a well-formed request, not a validation error. The console shows the rule's own
 message and the balance is untouched.
 
-![Payment refused because the invoice is cancelled](screenshots/06-payment-rejected-cancelled-invoice.png)
+![Payment refused because the invoice is cancelled](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/06-payment-rejected-cancelled-invoice.png)
 
 The same form against a cancelled invoice: refused for a different reason, with a different message,
 and the page also states the invoice's state outright. Distinguishing *which* rule refused a payment is
-the whole point of the status split documented in the [README](../README.md#error-semantics); a suite
+the whole point of the status split documented in the [README](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/README.md#error-semantics); a suite
 that only asserted "an error appeared" would pass if the two rules were swapped.
 
 ### 5.5 Terminal and error states
 
-![A fully settled invoice](screenshots/07-invoice-settled.png)
+![A fully settled invoice](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/07-invoice-settled.png)
 
 Settled in full: status `PAID`, outstanding 0.00, and the page says so explicitly rather than leaving an
 empty form to be interpreted.
 
-![The console's own not-found page](screenshots/08-invoice-not-found.png)
+![The console's own not-found page](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/08-invoice-not-found.png)
 
 `/invoices/999999`. The console returns its own 404 page, not the JSON error body the REST API returns
 for the same missing resource — the web controller declares a local `@ExceptionHandler` for exactly this
@@ -249,7 +252,7 @@ reason. Cypress asserts on it too.
 
 ### 5.6 The policyholder's billing account
 
-![Account summary: balance, next payment, and the two failed-payment tallies](screenshots/09-account-summary.png)
+![Account summary: balance, next payment, and the two failed-payment tallies](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/09-account-summary.png)
 
 `ACCT-100002`, the seeded account whose premium does not divide evenly and whose first payment was
 returned. The billing panel answers "what do I owe and when does it come out"; the payment panel shows
@@ -257,7 +260,7 @@ the plan, the method and the bank details **masked**. The masking is structural:
 has no field that could hold a full account number, so there is nothing for an endpoint, a log or a
 SOAP response to leak.
 
-![Payment schedule: the down payment carries the rounding remainder](screenshots/10-term-schedule.png)
+![Payment schedule: the down payment carries the rounding remainder](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/10-term-schedule.png)
 
 Twelve installments summing to exactly 1112.00. 1000.00 of premium over twelve is 83.3333, so twelve
 payments of 83.33 would collect four cents short; the remainder goes on the **down payment** rather
@@ -265,14 +268,14 @@ than the last installment, because the down payment is the figure quoted at bind
 stranded on the final installment leaves a balance that trips a collection notice on a fully paid term.
 Installment 1 also reads `REVERSED` — the payment against it was returned.
 
-![Transaction history with a running balance](screenshots/11-term-transactions.png)
+![Transaction history with a running balance](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/11-term-transactions.png)
 
 New business, a payment, its reversal and the fee, newest first, every amount split into premium, tax,
 fee and suspense. The running balance on each line is **derived** from the lines below it rather than
 stored, so there is no second copy of the figure that could disagree — which makes "every line agrees
 with the balance beside it" an invariant rather than a spot check.
 
-![The same account in French](screenshots/12-account-summary-french.png)
+![The same account in French](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/12-account-summary-french.png)
 
 The same screen in French. The figures are identical; the words and the number format are not
 (`1 591,60 $` against `$1,591.60`). Every status carries a language-independent `data-status`
@@ -281,13 +284,13 @@ words would pass in English and fail in French while the application behaved ide
 
 ### 5.7 The agent's console
 
-![Agent console: every term on the books, ordered by policy number and totalled](screenshots/13-agent-console-portfolio.png)
+![Agent console: every term on the books, ordered by policy number and totalled](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/13-agent-console-portfolio.png)
 
 The whole book in one grid — policy, insured, product, term status, effective, expiry, balance —
 ordered by policy number rather than by insertion order, with a **Total** row that is summed from the
 rows on screen rather than queried separately, so it cannot disagree with the column above it.
 
-![The same ledger, read from the agent's console](screenshots/14-agent-console-ledger.png)
+![The same ledger, read from the agent's console](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/14-agent-console-ledger.png)
 
 The same ledger as 5.6, for the same term, read by the other persona. Both screens render the **same
 Thymeleaf fragment**, so they cannot disagree by construction — and that is exactly the kind of claim
@@ -308,16 +311,16 @@ Measured during this run, from the merged JaCoCo execution data:
 | Method | 376 / 385 | 91.7% | **97.7%** |
 | Class | 75 / 75 | 96.0% | **100%** |
 
-![JaCoCo full-stack coverage report](screenshots/15-coverage-jacoco.png)
+![JaCoCo full-stack coverage report](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/15-coverage-jacoco.png)
 
-Both columns come from this run and reproduce the figures recorded in [`coverage.md`](coverage.md)
+Both columns come from this run and reproduce the figures recorded in [`coverage.md`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/docs/coverage.md)
 exactly. The gap between them is the point: the API, UI and BDD suites drive the application in a
 **separate JVM**, so an ordinary in-process coverage run sees nothing they do.
 
 The application grew from 42 classes to 75 in this release, so these are not the same denominators as
 the 1.1.0 report's and the percentages should not be read as a trend.
 
-All 21 missed lines and 23 missed branches are named class by class in [`coverage.md`](coverage.md).
+All 21 missed lines and 23 missed branches are named class by class in [`coverage.md`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/docs/coverage.md).
 Almost all are defensive code whose failing side cannot be reached through the application — and one is
 not: the agent console's empty-portfolio branch is perfectly reachable and simply has no suite that
 arranges a database with nothing in it. It is listed as the real gap it is. There is deliberately **no
@@ -335,13 +338,13 @@ coverage gate**.
 
 The load plan was re-run for this release, natively:
 
-![JMeter dashboard for the invoice API load test](screenshots/18-jmeter-dashboard.png)
+![JMeter dashboard for the invoice API load test](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/18-jmeter-dashboard.png)
 
 1050 samples, 0% errors, 1.3 ms mean, 3 ms p95, 227.9 requests/s total — including the two new samplers
 over the installment schedule and the transaction ledger, each with a per-thread account and bound term
 so no two threads share a schedule.
 
-Read [`perf/README.md`](../perf/README.md) before quoting any of that. The load generator and the
+Read [`perf/README.md`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/perf/README.md) before quoting any of that. The load generator and the
 application shared one machine, the database was in-memory, and the run lasted five seconds. It shows
 the paths work under concurrent load. It is not a capacity measurement.
 
@@ -353,9 +356,9 @@ executed under Rosetta 2 translation; this one is native arm64. Both tables are 
 
 ## 8. BDD scenario reports
 
-![Cucumber report for the API scenarios](screenshots/16-cucumber-api-scenarios.png)
+![Cucumber report for the API scenarios](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/16-cucumber-api-scenarios.png)
 
-![Cucumber report for the browser scenarios](screenshots/17-cucumber-ui-scenarios.png)
+![Cucumber report for the browser scenarios](https://raw.githubusercontent.com/wiki/abdeljalilsennaoui/insurance-billing-qa-framework/screenshots/17-cucumber-ui-scenarios.png)
 
 24 API scenarios over 96 steps and 19 browser scenarios over 142 steps, all passing. The two runners are
 split by tag so a browser problem and a contract problem cannot arrive as the same red result.
@@ -378,7 +381,7 @@ Stated here because a report that only lists what passed is an advertisement.
 4. **Chrome only.** No Firefox, Safari or Edge run.
 5. **Cypress overlaps the Selenium coverage.** Justified as triangulation across two independent
    toolchains; it is still duplication, and it is listed as such rather than counted twice.
-6. **The Jenkins pipeline was not executed.** [`Jenkinsfile`](../Jenkinsfile) is written against this
+6. **The Jenkins pipeline was not executed.** [`Jenkinsfile`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/Jenkinsfile) is written against this
    project's real layout and commands, but no Jenkins controller was available. GitHub Actions is the
    pipeline that actually gates merges.
 7. **The two-consecutive-passes isolation check was not repeated at 1.2.0.** The 1.1.0 measurement
@@ -388,8 +391,8 @@ Stated here because a report that only lists what passed is an advertisement.
 
 ## 10. Defects
 
-<!--count:defects-->14<!--/count--> defects were found and fixed while building the project, each documented with steps, root cause
-and fixing commit in [`defect-reports.md`](defect-reports.md). **None is open.**
+Fourteen defects were found and fixed while building the project, each documented with steps, root cause
+and fixing commit in [`defect-reports.md`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/docs/defect-reports.md). **None is open.**
 
 This release added two, and both were found by looking rather than by a suite going red:
 
@@ -400,11 +403,10 @@ This release added two, and both were found by looking rather than by a suite go
   other: 171 tests in one document and 165 in another, twelve defects here and nine there. Fixed by
   generating the counts rather than typing them, with a CI check that fails on any disagreement.
 
-<!--count:infra-defects-->4<!--/count--> earlier ones (DEF-005, DEF-007, DEF-008, DEF-010) were defects in the *test infrastructure* rather
-than the application — a test group selector silently ignored, a start script reporting healthy for a
-server it had not started, Cucumber hooks never registered, and Surefire running an integration test
-without an application. The dangerous ones are the first two: they produced a green or healthy result
-while testing less than they claimed. DEF-013 and DEF-014 are quieter members of
+Three earlier ones (DEF-005, DEF-007, DEF-008) were defects in the *test infrastructure* rather than the
+application — a test group selector silently ignored, a start script reporting healthy for a server it
+had not started, and Cucumber hooks never registered. Those are the dangerous ones: each produced a
+green or healthy result while testing less than it claimed. DEF-013 and DEF-014 are quieter members of
 the same family, and both were fixed the same way: check the population, not the list.
 
 ---
@@ -421,6 +423,6 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 ./scripts/check-doc-numbers.sh    # hold this document's figures to it
 ```
 
-The screenshots are committed under [`screenshots/`](screenshots) and are regenerated by the third
+The screenshots are committed under [`screenshots/`](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/blob/main/docs/screenshots) and are regenerated by the third
 command, so a change to the console shows up as an image diff in the pull request that caused it. The
 counts are regenerated by the fourth, for the same reason.
