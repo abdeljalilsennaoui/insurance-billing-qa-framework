@@ -4,7 +4,7 @@
 # docs/test-inventory.md.
 #
 # This exists because the counts in this repository's documentation drifted apart from the suite and
-# from each other (DEF-013). Every figure quoted in the README and the docs is now generated from
+# from each other (DEF-014). Every figure quoted in the README and the docs is now generated from
 # surefire/failsafe XML and Cucumber JSON rather than typed by hand, so the only way for a number to
 # be wrong is for the run itself to have been wrong.
 #

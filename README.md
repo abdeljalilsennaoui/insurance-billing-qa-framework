@@ -70,7 +70,7 @@ invisible to anyone testing in the other language.
 | **Performance** | JMeter plan with per-thread fixtures, measured and reported honestly | [`perf`](perf/README.md) |
 | **CI/CD** | GitHub Actions — artifact passing, health-polled startup, coverage merged across jobs | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 | **Code quality** | JaCoCo, SonarQube Cloud, Codecov, and what each is allowed to gate | [`docs/code-quality.md`](docs/code-quality.md) |
-| **Test design** | 32 manual test cases, 33 requirements traced to test methods by name | [`docs/`](docs) |
+| **Test design** | <!--count:cases-->34<!--/count--> manual test cases, <!--count:requirements-->33<!--/count--> requirements traced to test methods by name | [`docs/`](docs) |
 | **Defect reporting** | 14 written up in professional form — including three in the *test* infrastructure | [`docs/defect-reports.md`](docs/defect-reports.md) |
 | **Application development** | Java 21, Spring Boot 3, JPA, Thymeleaf, Bean Validation | [`billing-app`](billing-app) |
 
@@ -329,9 +329,9 @@ and then silently running every test class instead.
 |---|---|
 | [Test execution report](docs/test-report.md) | One full run of every suite, with screenshots of the console, coverage figures and the limitations |
 | [Test strategy](docs/test-strategy.md) | Test levels, architectural decisions with their trade-offs, risk prioritisation, known limitations |
-| [Manual test cases](docs/manual-test-cases.md) | 22 cases with steps and expected results, each marked automated or not |
-| [Traceability matrix](docs/requirements-traceability-matrix.md) | 23 requirements mapped to manual cases and automated tests by class and method |
-| [Defect reports](docs/defect-reports.md) | The 12 defects found during development, each linked to its fixing commit |
+| [Manual test cases](docs/manual-test-cases.md) | <!--count:cases-->34<!--/count--> cases with steps and expected results, each marked automated or not |
+| [Traceability matrix](docs/requirements-traceability-matrix.md) | <!--count:requirements-->33<!--/count--> requirements mapped to manual cases and automated tests by class and method |
+| [Defect reports](docs/defect-reports.md) | The <!--count:defects-->14<!--/count--> defects found during development, each linked to its fixing commit |
 | [Agile workflow](docs/agile-workflow.md) | How the work was run, and how it maps to Jira and Zephyr |
 | [Performance results](perf/README.md) | Measured JMeter numbers and why they are not a capacity claim |
 | [Code coverage](docs/coverage.md) | Line and branch coverage, how black-box suites are measured, every remaining gap named |

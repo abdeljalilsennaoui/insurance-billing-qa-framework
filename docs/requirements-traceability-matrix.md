@@ -4,7 +4,7 @@ Maps each requirement to its manual test case and to the automated tests that co
 and method name. Every name below was taken from the source, not from memory; they can be checked with
 `grep -rn "<methodName>" .`
 
-**Coverage summary:** 33 requirements, all automated at least once. 16 are covered at four or more
+**Coverage summary:** <!--count:requirements-->33<!--/count--> requirements, all automated at least once. 16 are covered at four or more
 levels; these are the critical money-handling rules.
 
 Level abbreviations: **U** domain unit · **I** application integration · **A** API automation ·

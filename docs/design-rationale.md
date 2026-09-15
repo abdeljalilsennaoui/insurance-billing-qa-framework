@@ -271,7 +271,7 @@ both packages.
 
 ## 9. The defects worth reading
 
-All twelve are in [`defect-reports.md`](defect-reports.md), each with steps, root cause and the commit
+All <!--count:defects-->14<!--/count--> are in [`defect-reports.md`](defect-reports.md), each with steps, root cause and the commit
 that fixed it. Three are worth more than the others.
 
 **DEF-007 — the start script reporting healthy for a server it did not start.** A stale instance held

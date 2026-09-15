@@ -247,10 +247,11 @@ Severity:
 Workflow: reproduce → write a failing test that captures it → fix → confirm the test passes → commit
 the fix with a message explaining the root cause, not just the symptom.
 
-Fourteen defects were found and fixed during development; all are recorded in
-[`defect-reports.md`](defect-reports.md) with the commit that fixed each. Notably, three of them
-(DEF-005, DEF-007, DEF-008) were **defects in the test infrastructure that made green runs
-untrustworthy** — the category worth the most attention, because it undermines every other result.
+<!--count:defects-->14<!--/count--> defects were found and fixed during development; all are recorded in
+[`defect-reports.md`](defect-reports.md) with the commit that fixed each. Notably, <!--count:infra-defects-->4<!--/count--> of them
+(DEF-005, DEF-007, DEF-008, DEF-010) were **defects in the test infrastructure rather than in the
+application** — the category worth the most attention, because two of them made green runs
+untrustworthy, which undermines every other result.
 
 DEF-013 and DEF-014 are a fourth of that kind in a quieter form: a language switch that rendered with
 no destination because its controller was missing from a list, and documented test counts that had
