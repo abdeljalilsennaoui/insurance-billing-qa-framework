@@ -4,7 +4,7 @@ Maps each requirement to its manual test case and to the automated tests that co
 and method name. Every name below was taken from the source, not from memory; they can be checked with
 `grep -rn "<methodName>" .`
 
-**Coverage summary:** 23 requirements, all automated at least once. 9 are covered at four or more
+**Coverage summary:** 33 requirements, all automated at least once. 16 are covered at four or more
 levels; these are the critical money-handling rules.
 
 Level abbreviations: **U** domain unit · **I** application integration · **A** API automation ·
@@ -209,8 +209,8 @@ API-level test would assert the same thing more slowly through more layers.
 | U | `InvoiceBalanceTest` | `unpaidInvoicePastDueDateIsOverdue`, `untouchedPastDueInvoiceIsPromotedToOverdue` |
 | I | `InvoicePaymentApiIntegrationTest` | `pastDueInvoiceIsReportedOverdue` |
 | A | `InvoicePaymentApiIT` | `anInvoicePastItsDueDateIsReportedOverdue` |
-| S | `InvoicePaymentUiIT` | `anOverdueInvoiceIsFlaggedOnItsDetailPage` |
-| S | `InvoiceListUiIT` | `anOverdueInvoiceIsFlaggedInTheList` |
+| S | `InvoicePaymentUiIT` | `anOverdueInvoiceSaysSoOnItsDetailPageWithoutRepeatingItself` |
+| S | `InvoiceListUiIT` | `anOverdueInvoiceSaysSoInItsStatusWithoutRepeatingItself` |
 | B | `invoice_payment_api.feature` | "An overdue invoice is reported as overdue until it is settled" |
 
 **Manual:** TC-015
@@ -325,10 +325,162 @@ data.
 
 | Level | Artefact | Detail |
 |---|---|---|
-| P | `perf/invoice-api-load.jmx` | 10 threads, 630 samples, 0% errors, 138.6 req/s |
+| P | `perf/invoice-api-load.jmx` | 10 threads, 1050 samples, 0% errors, 227.9 req/s |
 
 **Results and limitations:** [`../perf/README.md`](../perf/README.md). **Not** a capacity measurement —
 see the limitations section there.
+
+---
+
+## Billing accounts, terms and the ledger
+
+### REQ-24 — An installment schedule sums to the term total exactly
+
+| Level | Class | Method |
+|---|---|---|
+| U | `MoneyAllocationTest` | `everyAllocationSumsBackToItsTotal` |
+| U | `InstallmentScheduleGeneratorTest` | `everyColumnReconcilesOnItsOwn` |
+| A | `InstallmentScheduleApiIT` | `everyScheduleColumnReconcilesAgainstItsTerm` |
+| S | `TermScheduleUiIT` | `theScheduleOnScreenCollectsExactlyWhatTheTermIsWorth` |
+| B | `installment_payment_api.feature` | "The schedule collects exactly what the term is worth" |
+| C | `billing_console_smoke.cy.js` | "shows the installment schedule adding up to the term exactly" |
+
+**Manual:** TC-023
+
+---
+
+### REQ-25 — The rounding remainder lands on the down payment, not the last installment
+
+| Level | Class | Method |
+|---|---|---|
+| U | `MoneyAllocationTest` | `remainderLandsOnTheFirstPart` |
+| A | `InstallmentScheduleApiIT` | `anUnevenTermPutsTheOddCentsOnTheDownPayment` |
+| S | `TermScheduleUiIT` | `theRoundingRemainderIsVisibleOnTheDownPayment` |
+| B | `installment_payment_api.feature` | "The rounding remainder lands on the down payment" |
+
+**Manual:** TC-023
+
+---
+
+### REQ-26 — A payment settles the oldest unpaid installment first
+
+| Level | Class | Method |
+|---|---|---|
+| U | `PolicyTermLedgerTest` | `aPaymentSettlesTheOldestUnpaidInstallmentFirst` |
+| A | `TransactionLedgerApiIT` | `onePaymentCoveringSeveralInstallmentsSettlesThemInOrder` |
+| B | `installment_payment_api.feature` | "A payment settles the oldest installment first" |
+
+**Manual:** TC-024
+
+---
+
+### REQ-27 — A returned payment reverses the posting, charges the fee and bumps the counters
+
+| Level | Class | Method |
+|---|---|---|
+| U | `ReturnedPaymentTest` | `aReturnedPaymentRaisesAFeeOnTopOfTheRestoredBalance` |
+| A | `ReturnedPaymentApiIT` | `aReturnedPaymentRestoresTheBalanceAndChargesAFee` |
+| A | `ReturnedPaymentApiIT` | `theReversalNegatesTheOriginalPaymentColumnForColumn` |
+| S | `TransactionLedgerUiIT` | `aReturnedPaymentAndItsFeeBothAppearOnTheLedger` |
+| S | `AgentConsoleUiIT` | `aReturnedPaymentIsVisibleToTheAgentAsItIsToTheCustomer` |
+| B | `installment_payment_api.feature` | "A returned payment puts the balance back and charges a fee" |
+| B | `billing_console_ui.feature` | "A returned payment is visible to the policyholder" |
+
+**Manual:** TC-025
+
+---
+
+### REQ-28 — Only a return for want of funds counts as an NSF
+
+| Level | Class | Method |
+|---|---|---|
+| U | `ReturnedPaymentTest` | `otherReasonsAreReturnedButNotNsf` |
+| A | `ReturnedPaymentApiIT` | `onlyAFundingFailureCountsAgainstTheNsfTally` |
+| B | `installment_payment_api.feature` | "A return the policyholder did not cause carries no fee" |
+
+**Manual:** TC-025
+
+---
+
+### REQ-29 — A payment cannot be returned twice
+
+| Level | Class | Method |
+|---|---|---|
+| U | `ReturnedPaymentTest` | `theSamePaymentCannotBeReturnedTwice` |
+| A | `ReturnedPaymentApiIT` | `theSamePaymentCannotBeReturnedTwice` |
+| B | `installment_payment_api.feature` | "The same payment cannot be returned twice" |
+
+**Manual:** TC-026
+
+---
+
+### REQ-30 — Bank details are never stored or served in full
+
+| Level | Class | Method |
+|---|---|---|
+| U | `BankAccountReferenceTest` | `theClassHasNowhereToPutAWholeAccountNumber` |
+| A | `AccountMaskingApiIT` | `noAccountNumberOnTheWireIsAnythingButFourStarsAndThreeDigits` |
+| C | `billing_console_smoke.cy.js` | "shows a policyholder what they owe and how it will be collected" |
+
+**Manual:** TC-027
+
+**Note.** This passes for a structural reason: `BankAccountReference` has no field that could hold a
+full number, so there is nothing for an endpoint, a log or a SOAP response to leak. A masking filter
+would satisfy the same assertions and would be one forgotten endpoint away from failing.
+
+---
+
+### REQ-31 — Every ledger line's running balance is the sum of the lines before it
+
+| Level | Class | Method |
+|---|---|---|
+| U | `PolicyTermLedgerTest` | `theRunningBalanceIsTheOrderedSumOfTheLines` |
+| A | `TransactionLedgerApiIT` | `theRunningBalanceIsTheOrderedSumOfTheLinesBelowIt` |
+| S | `TransactionLedgerUiIT` | `theRunningBalanceOnScreenIsTheSumOfTheLinesBelowIt` |
+| B | `installment_payment_api.feature` | "Every line of the ledger agrees with the balance beside it" |
+| C | `billing_console_smoke.cy.js` | "shows the ledger with a running balance on every line" |
+
+**Manual:** TC-029
+
+---
+
+## The console in two languages
+
+### REQ-32 — Every console page is published in English and French, with no untranslated key
+
+| Level | Class | Method |
+|---|---|---|
+| U | `MessageBundleParityTest` | `everyEnglishKeyHasAFrenchCounterpart` |
+| U | `MessageBundleParityTest` | `everyFrenchKeyHasAnEnglishCounterpart` |
+| I | `LocalisedConsoleWebTest` | `noPageRendersAnUnresolvedMessageKey` |
+| I | `AgentConsoleWebTest` | `noPanelRendersAnUnresolvedMessageKey` |
+| I | `LocalisedConsoleWebTest` | `everyConsolePageOffersAWorkingLanguageSwitch` |
+| S | `BilingualConsoleUiIT` | `moneyIsWrittenTheWayTheReadersLanguageWritesIt` |
+| S | `BilingualConsoleUiIT` | `switchingLanguageChangesTheWordsAndNotTheFigures` |
+| B | `bilingual_console_ui.feature` | "An invoice reads the same figures in both languages" |
+| C | `billing_console_smoke.cy.js` | "reads the agent console in French without changing the figures" |
+
+**Manual:** TC-030 · **Defect:** DEF-013
+
+---
+
+## The agent console
+
+### REQ-33 — An agent can read the whole book, and sees the same figures the policyholder sees
+
+| Level | Class | Method |
+|---|---|---|
+| I | `AgentConsoleWebTest` | `theGridListsEveryTermOnTheBooks` |
+| I | `AgentConsoleWebTest` | `theTotalIsTheSumOfTheBalancesShownAboveIt` |
+| I | `AgentConsoleWebTest` | `bothConsolesShowTheSameFigures` |
+| S | `AgentConsoleUiIT` | `theGridShowsATermTheMomentItIsBound` |
+| S | `AgentConsoleUiIT` | `theTotalAddsUpTheColumnAboveIt` |
+| S | `AgentConsoleUiIT` | `theAgentAndThePolicyholderReadTheSameSchedule` |
+| B | `billing_console_ui.feature` | "Both screens report the same schedule" |
+| B | `billing_console_ui.feature` | "Both screens report the same ledger" |
+| C | `billing_console_smoke.cy.js` | "shows an agent the whole book with a total that adds up" |
+
+**Manual:** TC-031, TC-032
 
 ---
 
@@ -343,3 +495,4 @@ Stated explicitly so the gaps are visible rather than implied:
 | REQ-17 (overdue asymmetry) | Unit | Pure state derivation |
 | REQ-21 (SOAP) | API | There is no UI for the SOAP service |
 | NFR-01 (performance) | JMeter | Manual by design; see the strategy for why it is not a CI gate |
+| REQ-30 (bank masking) | Unit + API + Cypress | No Selenium test: the structural check is stronger than any screen assertion, and the console screen is covered by TC-027 step 1 through Cypress |

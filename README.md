@@ -3,7 +3,7 @@
 [![CI](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=abdeljalilsennaoui_insurance-billing-qa-framework&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=abdeljalilsennaoui_insurance-billing-qa-framework)
 [![Coverage](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework/branch/main/graph/badge.svg)](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework)
-![Tests](https://img.shields.io/badge/tests-171%20passing-success)
+![Tests](https://img.shields.io/badge/tests-477%20passing-success)
 
 ![Java](https://img.shields.io/badge/Java-21-007396)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F)
@@ -16,18 +16,19 @@
 ![Maven](https://img.shields.io/badge/build-Maven-C71A36)
 
 **End-to-end test automation for a simulated insurance billing platform.** A Spring Boot application —
-customers, policies, invoices and payments, with a REST API, a contract-first SOAP service and a web
-console — and the seven layers of QA automation that exercise it, with the pipeline that runs all of it
-on every pull request.
+customers, policies, invoices, policy terms with installment schedules and an append-only transaction
+ledger, behind a REST API, a contract-first SOAP service and a bilingual web console — and the seven
+layers of QA automation that exercise it, with the pipeline that runs all of it on every pull request.
 
 | | |
 |---|---|
-| **Automated tests** | **171**, all passing · 169 run on every pull request |
+| **Automated tests** | **<!--count:total-->477<!--/count-->**, all passing · 473 run on every pull request |
 | **Test levels** | unit · integration · API · UI · BDD · smoke · performance |
-| **Coverage** | 99.0% line, 88.9% branch — [measured full-stack](docs/coverage.md), black-box suites included |
+| **Coverage** | 98.4% line, 87.6% branch — [measured full-stack](docs/coverage.md), black-box suites included |
 | **Static analysis** | SonarQube Cloud quality gate **passing** — 0 bugs, 0 vulnerabilities, 0 security hotspots |
-| **Defects found and fixed** | **12**, each with steps, root cause and its fixing commit |
+| **Defects found and fixed** | **14**, each with steps, root cause and its fixing commit |
 | **Continuous integration** | 6 GitHub Actions jobs, green on `main` |
+| **Counts in this file** | generated from the last run — see [test inventory](docs/test-inventory.md) and DEF-014 |
 
 ## The application under test
 
@@ -38,20 +39,39 @@ with balances derived rather than stored. Every screenshot in this repository is
 test suite itself**, through the same page objects and locators the tests use — so the evidence cannot
 drift away from what is actually tested.
 
+The billing side is where the arithmetic lives. A policy term is posted to the ledger in full when it
+is bound, and the installment schedule is a plan against that balance rather than a set of separate
+charges — so a schedule that does not add back up to the term is visible on screen, and the running
+balance on every ledger line is derived rather than stored.
+
+![The agent console: every term on the books, ordered by policy number and totalled](docs/screenshots/13-agent-console-portfolio.png)
+
+Two readers, one set of figures. The policyholder's screens and the agent's console above render the
+**same Thymeleaf fragment**, so they cannot disagree by construction — and tests at three levels check
+that they do not, because "cannot by construction" is the kind of claim that stops being true the first
+time somebody is in a hurry.
+
+The console is published in English and French. Money and dates are formatted per locale
+(`$1,591.60` / `1 591,60 $`), every status carries a language-independent `data-status` attribute so
+the automation never reads display copy, and a unit test holds the two message bundles to each other —
+a key present in one and missing from the other renders as `??key??` for half the readers and is
+invisible to anyone testing in the other language.
+
 ## What this project demonstrates
 
 | Area | Tools and techniques | Where to look |
 |---|---|---|
-| **UI automation** | Selenium 4, Page Object Model, explicit waits only, parallel-safe `ThreadLocal` drivers | [`qa-ui-tests`](qa-ui-tests) — 18 tests |
-| **API automation** | REST Assured, TestNG groups and data providers, negative-path coverage | [`qa-api-tests`](qa-api-tests) — 52 tests |
+| **UI automation** | Selenium 4, Page Object Model, explicit waits only, parallel-safe `ThreadLocal` drivers | [`qa-ui-tests`](qa-ui-tests) — <!--count:ui-->60<!--/count--> tests |
+| **API automation** | REST Assured, TestNG groups and data providers, negative-path coverage | [`qa-api-tests`](qa-api-tests) — <!--count:api-->108<!--/count--> tests |
 | **SOAP testing** | Contract-first XSD → WSDL, fault-path assertions | 7 tests in `qa-api-tests` |
-| **BDD** | Cucumber 7, Gherkin features, step definitions with no automation logic in them | [`qa-bdd-tests`](qa-bdd-tests) — 20 scenarios |
-| **JavaScript E2E** | Cypress 15 smoke suite, as independent triangulation | [`cypress`](cypress) — 7 tests |
+| **BDD** | Cucumber 7, Gherkin features, step definitions with no automation logic in them | [`qa-bdd-tests`](qa-bdd-tests) — <!--count:bdd-->43<!--/count--> scenarios |
+| **JavaScript E2E** | Cypress 15 smoke suite, as independent triangulation | [`cypress`](cypress) — <!--count:cypress-->12<!--/count--> tests |
+| **Localization** | EN/FR message bundles, locale-aware money and dates, parity enforced by test | [`MessageBundleParityTest`](billing-app/src/test/java/com/insurancebilling/config/MessageBundleParityTest.java) |
 | **Performance** | JMeter plan with per-thread fixtures, measured and reported honestly | [`perf`](perf/README.md) |
 | **CI/CD** | GitHub Actions — artifact passing, health-polled startup, coverage merged across jobs | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 | **Code quality** | JaCoCo, SonarQube Cloud, Codecov, and what each is allowed to gate | [`docs/code-quality.md`](docs/code-quality.md) |
-| **Test design** | 22 manual test cases, 23 requirements traced to test methods by name | [`docs/`](docs) |
-| **Defect reporting** | 12 written up in professional form — including three in the *test* infrastructure | [`docs/defect-reports.md`](docs/defect-reports.md) |
+| **Test design** | 32 manual test cases, 33 requirements traced to test methods by name | [`docs/`](docs) |
+| **Defect reporting** | 14 written up in professional form — including three in the *test* infrastructure | [`docs/defect-reports.md`](docs/defect-reports.md) |
 | **Application development** | Java 21, Spring Boot 3, JPA, Thymeleaf, Bean Validation | [`billing-app`](billing-app) |
 
 ## Start here
@@ -61,7 +81,7 @@ drift away from what is actually tested.
 | **Five minutes** | [**Test execution report**](docs/test-report.md) — one complete run, with screenshots of every screen and the measured results |
 | **Fifteen minutes** | [**Design rationale**](docs/design-rationale.md) — how it is built and why, by file path, including the decisions that were wrong first |
 | **A browser tab** | [**Project wiki**](../../wiki) — the guided tour |
-| **A specific question** | [Test strategy](docs/test-strategy.md) · [Coverage](docs/coverage.md) · [Defect log](docs/defect-reports.md) · [Traceability matrix](docs/requirements-traceability-matrix.md) |
+| **A specific question** | [Test strategy](docs/test-strategy.md) · [Coverage](docs/coverage.md) · [Defect log](docs/defect-reports.md) · [Traceability matrix](docs/requirements-traceability-matrix.md) · [Test inventory](docs/test-inventory.md) |
 
 ## How it is structured
 
@@ -86,7 +106,9 @@ contract had silently broken.
 | `qa-ui-tests` | Selenium 4 + Page Object Model UI automation |
 | `qa-bdd-tests` | Cucumber feature files and step definitions |
 | `scripts/` | Application lifecycle and full-suite run scripts |
-| `docs/` | Test strategy, manual test cases, traceability matrix, defect reports |
+| `cypress/` | Cypress smoke suite, as independent triangulation |
+| `perf/` | JMeter load plan and its measured results |
+| `docs/` | Test strategy, manual test cases, traceability matrix, defect reports, generated test inventory |
 
 Framework code in the automation modules lives in `src/main/java`, and the tests themselves in
 `src/test/java`. That split lets the BDD module reuse the API clients and page objects as ordinary
@@ -94,28 +116,35 @@ library classes instead of consuming another module's test-jar.
 
 ## Test counts
 
+**These numbers are generated, not typed.** `scripts/count-tests.sh` reads them out of the reports the
+last run produced and writes [`docs/test-inventory.md`](docs/test-inventory.md);
+`scripts/check-doc-numbers.sh` fails the build if a figure quoted here disagrees with it. That is the
+fix for DEF-014, where eight hand-maintained figures had drifted apart from the suite and from each
+other.
+
 | Suite | Tests | Runner | In CI |
 |---|---:|---|---|
-| Domain unit | 27 | JUnit 5 | yes |
-| Application integration (API + web layer) | 45 | JUnit 5 + MockMvc | yes |
-| API automation (incl. 7 SOAP) | 52 | TestNG + REST Assured | yes |
-| UI automation | 18 | TestNG + Selenium 4 | yes |
-| BDD scenarios (14 API + 6 UI) | 20 | Cucumber 7 + TestNG | yes |
-| Smoke | 7 | Cypress | yes |
-| Reset endpoint (`test-support` group) | 2 | TestNG + REST Assured | no — must run alone |
-| **Total** | **171** | | **169** |
+| Domain and service unit | <!--count:unit-->151<!--/count--> | JUnit 5 | yes |
+| Application integration (API + web layer) | <!--count:integration-->103<!--/count--> | JUnit 5 + MockMvc | yes |
+| API automation (incl. 7 SOAP, 4 `test-support`) | <!--count:api-->108<!--/count--> | TestNG + REST Assured | 104 of 108 |
+| UI automation | <!--count:ui-->60<!--/count--> | TestNG + Selenium 4 | yes |
+| BDD scenarios (24 API + 19 UI) | <!--count:bdd-->43<!--/count--> | Cucumber 7 + TestNG | yes |
+| Smoke | <!--count:cypress-->12<!--/count--> | Cypress | yes |
+| **Total** | **<!--count:total-->477<!--/count-->** | | **473** |
 | Performance | 1 plan | JMeter | no — run manually, see [perf](perf/README.md) |
 
-169 of the 171 run on every pull request across five CI jobs, with a sixth that runs no tests and
-publishes their merged coverage. The two excluded are the `test-support`
-reset tests, which wipe the database and therefore cannot run beside anything else; `scripts/coverage.sh`
-runs them last, on their own.
+473 of the 477 run on every pull request across five CI jobs, with a sixth that runs no tests and
+publishes their merged coverage. The four excluded are the `test-support` reset tests, which wipe the
+database and therefore cannot run beside anything else; `scripts/coverage.sh` runs them last, on their
+own.
 
 Verified to pass **twice in a row against one running application instance** — 97 black-box tests
 (52 API, 18 UI, 20 BDD, 7 smoke) run through twice on 2026-09-14 against an application started once,
 with no reset between the passes. That is the check that catches shared-state coupling: a suite which
 only passes against a freshly started application is hiding a dependency that surfaces later as
-apparent flakiness in an unrelated test.
+apparent flakiness in an unrelated test. **That figure is from the 1.1.0 suite and has not been
+re-measured against the 1.2.0 one** — it is left as the dated measurement it is rather than restated
+for a suite it did not run against.
 
 The application uses JUnit 5 because that is the idiomatic Spring Boot stack; the automation modules use
 TestNG for its groups, data providers and parallel execution, which is what the QA tooling ecosystem is
@@ -133,9 +162,9 @@ open billing-app/target/site/jacoco-full/index.html
 
 | Metric | In-process | Full-stack |
 |---|---|---|
-| Line | 91.0% | **99.0%** |
-| Branch | 88.9% | **88.9%** |
-| Class | 95.2% | **100%** |
+| Line | 91.5% | **98.4%** |
+| Branch | 83.3% | **87.6%** |
+| Class | 96.0% | **100%** |
 
 The two columns differ because the API, UI and BDD suites drive the application in a **separate JVM**, so
 an ordinary in-process coverage run sees nothing of what they exercise — the SOAP package reads 44%

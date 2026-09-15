@@ -6,6 +6,7 @@ import com.insurancebilling.qa.api.data.BillingTestData;
 import com.insurancebilling.qa.api.model.InvoiceDto;
 import com.insurancebilling.qa.ui.config.UiConfig;
 import com.insurancebilling.qa.ui.driver.DriverFactory;
+import com.insurancebilling.qa.ui.pages.AgentConsolePage;
 import com.insurancebilling.qa.ui.pages.InvoiceDetailsPage;
 import com.insurancebilling.qa.ui.pages.AccountSummaryPage;
 import com.insurancebilling.qa.ui.pages.InvoiceListPage;
@@ -182,21 +183,42 @@ public final class DocumentationScreenshots {
     capture(
         "12-account-summary-french",
         "The same screen in French: the figures are identical, the words and the number format are not");
+
+    captureAgentConsole();
+  }
+
+  /**
+   * The agent's side of the same data.
+   *
+   * <p>Captured from the same seeded accounts as the policyholder screens above, and that is the point
+   * of including it: the ledger in 14 is the ledger in 11, rendered by the same fragment for a
+   * different reader. A screenshot pair is the cheapest way to show that.
+   */
+  private void captureAgentConsole() {
+    AgentConsolePage agent = new AgentConsolePage().open();
+    capture(
+        "13-agent-console-portfolio",
+        "Agent console: every term on the books, ordered by policy number and totalled");
+
+    agent.open("SEED-TERM-002", "transactions");
+    capture(
+        "14-agent-console-ledger",
+        "The same ledger the policyholder sees in 11, read from the agent's console");
   }
 
   /** The HTML reports produced by the suites and by the coverage and performance tooling. */
   private void captureReports() {
     captureLocalReport(
         "billing-app/target/site/jacoco-full/index.html",
-        "13-coverage-jacoco",
+        "15-coverage-jacoco",
         "JaCoCo full-stack coverage report");
     captureLocalReport(
         "qa-bdd-tests/target/cucumber-reports/api.html",
-        "14-cucumber-api-scenarios",
+        "16-cucumber-api-scenarios",
         "Cucumber report for the API scenarios");
     captureLocalReport(
         "qa-bdd-tests/target/cucumber-reports/ui.html",
-        "15-cucumber-ui-scenarios",
+        "17-cucumber-ui-scenarios",
         "Cucumber report for the browser scenarios");
     captureLatestJmeterDashboard();
   }
@@ -269,7 +291,7 @@ public final class DocumentationScreenshots {
               latest ->
                   captureLocalReport(
                       latest.resolve("index.html").toString(),
-                      "16-jmeter-dashboard",
+                      "18-jmeter-dashboard",
                       "JMeter dashboard for the invoice API load test"),
               () -> System.out.println("Skipping the JMeter dashboard: no report-* directory"));
     } catch (IOException unreadable) {

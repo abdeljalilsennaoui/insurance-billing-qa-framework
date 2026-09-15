@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""Builds docs/test-inventory.md from the reports the last run produced.
+
+Reads surefire and failsafe XML for the Java suites and Cucumber JSON for the BDD scenarios, and
+writes a Markdown inventory to stdout. Nothing here is hand-maintained: if a figure in this file is
+wrong, the run that produced the reports was wrong.
+
+Cypress is counted from its spec files rather than from a report, because the suite is run through
+the Cypress binary rather than Maven and leaves no machine-readable artefact behind by default. That
+is stated in the output rather than hidden, so nobody mistakes it for a measured result.
+"""
+
+from __future__ import annotations
+
+import glob
+import json
+import os
+import re
+import xml.etree.ElementTree as ET
+from collections import defaultdict
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Module -> the layer it is reported as. Ordered as a reader would read them: inside out.
+# The application's own tests are split by package rather than lumped together, because the two halves
+# are different kinds of test and the documentation quotes them separately: domain and service classes
+# run with no Spring context at all, while everything under `api` boots one.
+LAYERS = [
+    ("billing-app", "surefire-reports", "Application — domain and service unit", lambda pkg: pkg != "api"),
+    ("billing-app", "surefire-reports", "Application — Spring integration", lambda pkg: pkg == "api"),
+    ("qa-api-tests", "failsafe-reports", "API (REST Assured)", None),
+    ("qa-ui-tests", "failsafe-reports", "UI (Selenium)", None),
+]
+
+
+def read_java_suites():
+    """Per-class test counts, keyed by layer."""
+    results = {}
+    for module, reports, label, package_filter in LAYERS:
+        pattern = os.path.join(REPO, module, "target", reports, "TEST-*.xml")
+        classes = {}
+        for path in sorted(glob.glob(pattern)):
+            root = ET.parse(path).getroot()
+            name = root.get("name", os.path.basename(path))
+            # Cucumber's TestNG runner reports one "test" per scenario; those are counted from the
+            # JSON instead, so the runner classes are skipped here to avoid counting them twice.
+            if name.endswith("ScenariosIT"):
+                continue
+            if package_filter is not None:
+                parts = name.split(".")
+                package = parts[2] if len(parts) > 3 else ""
+                if not package_filter(package):
+                    continue
+            classes[name] = {
+                "tests": int(root.get("tests", 0)),
+                "failures": int(root.get("failures", 0)),
+                "errors": int(root.get("errors", 0)),
+                "skipped": int(root.get("skipped", 0)),
+            }
+        results[label] = classes
+    return results
+
+
+def read_cucumber():
+    """Scenario counts per feature, from the Cucumber JSON reports."""
+    features = {}
+    for path in sorted(glob.glob(os.path.join(REPO, "qa-bdd-tests", "target", "cucumber-reports", "*.json"))):
+        with open(path, encoding="utf-8") as handle:
+            for feature in json.load(handle):
+                name = feature.get("name", "?")
+                # A Scenario Outline contributes one element per Examples row, which is the right
+                # count: each row is a scenario that can pass or fail on its own.
+                scenarios = [e for e in feature.get("elements", []) if e.get("type") == "scenario"]
+                steps = sum(len(e.get("steps", [])) for e in scenarios)
+                passed = sum(
+                    1
+                    for e in scenarios
+                    if all(s.get("result", {}).get("status") == "passed" for s in e.get("steps", []))
+                )
+                entry = features.setdefault(name, {"scenarios": 0, "steps": 0, "passed": 0})
+                entry["scenarios"] += len(scenarios)
+                entry["steps"] += steps
+                entry["passed"] += passed
+    return features
+
+
+def count_cypress():
+    """Cypress tests, counted from the specs themselves. See the module docstring."""
+    specs = {}
+    for path in sorted(glob.glob(os.path.join(REPO, "cypress", "cypress", "e2e", "*.cy.js"))):
+        with open(path, encoding="utf-8") as handle:
+            source = handle.read()
+        specs[os.path.basename(path)] = len(re.findall(r"^\s*it\(", source, re.MULTILINE))
+    return specs
+
+
+def testng_groups():
+    """Group membership, read from the @Test annotations themselves."""
+    groups = defaultdict(int)
+    for module in ("qa-api-tests", "qa-ui-tests"):
+        for path in glob.glob(os.path.join(REPO, module, "src", "test", "**", "*.java"), recursive=True):
+            with open(path, encoding="utf-8") as handle:
+                source = handle.read()
+            for match in re.finditer(r"@Test\s*\(\s*groups\s*=\s*(\{[^}]*\}|\"[^\"]*\")", source):
+                for group in re.findall(r"\"([^\"]+)\"", match.group(1)):
+                    groups[group] += 1
+    return groups
+
+
+def table(rows, headers, aligns=None):
+    aligns = aligns or ["---"] * len(headers)
+    out = ["| " + " | ".join(headers) + " |", "|" + "|".join(aligns) + "|"]
+    out += ["| " + " | ".join(str(c) for c in row) + " |" for row in rows]
+    return "\n".join(out)
+
+
+def main():
+    java = read_java_suites()
+    cucumber = read_cucumber()
+    cypress = count_cypress()
+    groups = testng_groups()
+
+    lines = [
+        "# Test inventory",
+        "",
+        "**Generated by `scripts/count-tests.sh` from the reports of the last run. Do not edit.**",
+        "",
+        "Every headline figure quoted in the README and the other documents is checked against this",
+        "file by `scripts/check-doc-numbers.sh`, which CI runs. That is the fix for DEF-013: the counts",
+        "used to be typed in several places and drifted apart from the suite and from each other.",
+        "",
+        "## Totals",
+        "",
+    ]
+
+    totals = []
+    grand = 0
+    for _, _, label, _ in LAYERS:
+        count = sum(c["tests"] for c in java[label].values())
+        grand += count
+        totals.append((label, count))
+
+    bdd_scenarios = sum(f["scenarios"] for f in cucumber.values())
+    cypress_total = sum(cypress.values())
+    grand += bdd_scenarios + cypress_total
+
+    rows = [(label, count) for label, count in totals]
+    rows.append(("BDD scenarios (Cucumber)", bdd_scenarios))
+    rows.append(("Smoke (Cypress)", cypress_total))
+    rows.append(("**Total**", f"**{grand}**"))
+    lines += [table(rows, ["Layer", "Count"], ["---", "---:"]), ""]
+
+    lines += ["## By class", ""]
+    for _, _, label, _ in LAYERS:
+        classes = java[label]
+        if not classes:
+            continue
+        lines += [f"### {label}", ""]
+        rows = []
+        for name, stats in sorted(classes.items()):
+            outcome = "pass" if stats["failures"] == 0 and stats["errors"] == 0 else "FAIL"
+            rows.append((f"`{name.rsplit('.', 1)[-1]}`", stats["tests"], outcome))
+        rows.append(("**Subtotal**", f"**{sum(c['tests'] for c in classes.values())}**", ""))
+        lines += [table(rows, ["Class", "Tests", "Result"], ["---", "---:", ":---:"]), ""]
+
+    if cucumber:
+        lines += ["### BDD scenarios (Cucumber)", ""]
+        rows = [
+            (f"{name}", stats["scenarios"], stats["steps"], "pass" if stats["passed"] == stats["scenarios"] else "FAIL")
+            for name, stats in sorted(cucumber.items())
+        ]
+        rows.append(("**Subtotal**", f"**{bdd_scenarios}**", f"**{sum(f['steps'] for f in cucumber.values())}**", ""))
+        lines += [table(rows, ["Feature", "Scenarios", "Steps", "Result"], ["---", "---:", "---:", ":---:"]), ""]
+
+    if cypress:
+        lines += [
+            "### Smoke (Cypress)",
+            "",
+            "Counted from the specs, not from a report: the suite runs through the Cypress binary rather",
+            "than Maven and produces no machine-readable artefact by default.",
+            "",
+        ]
+        rows = [(f"`{name}`", count) for name, count in sorted(cypress.items())]
+        rows.append(("**Subtotal**", f"**{cypress_total}**"))
+        lines += [table(rows, ["Spec", "Tests"], ["---", "---:"]), ""]
+
+    if groups:
+        lines += [
+            "## TestNG groups",
+            "",
+            "Read from the `@Test(groups = ...)` annotations, so these are **annotated methods, not",
+            "executed tests**. The two differ wherever a data provider expands one method into a row per",
+            "case, which is why the group figures here are smaller than the per-class counts above.",
+            "",
+            "A test in neither `regression` nor `ui-regression` never runs in CI.",
+            "",
+            table(
+                [(f"`{name}`", count) for name, count in sorted(groups.items())],
+                ["Group", "Tests"],
+                ["---", "---:"],
+            ),
+            "",
+        ]
+
+    print("\n".join(lines).rstrip() + "\n")
+
+
+if __name__ == "__main__":
+    main()

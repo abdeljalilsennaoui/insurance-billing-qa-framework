@@ -11,11 +11,14 @@ team would use.
 
 | Artefact | Where | Count |
 |---|---|---|
-| Backlog items | GitHub Issues | 25 |
-| Release container | GitHub Milestone `v1.0 - QA Automation Portfolio` | 1 |
-| Categorisation | GitHub labels (`feature`, `testing`, `api`, `ui`, `bdd`, `ci-cd`, `documentation`, `performance`, `soap`, `bug`, `automation`, `refactor`, `enhancement`) | 13 |
-| Units of delivery | Pull requests, each closing one or more issues | 14 |
-| Quality gate | GitHub Actions, 5 jobs, required green before merge | 1 pipeline |
+| Backlog items | GitHub Issues | 30 |
+| Release container | GitHub Milestone `v1.0 - QA Automation Portfolio` | 1, closed with 25 issues |
+| Categorisation | GitHub labels (`feature`, `testing`, `api`, `ui`, `bdd`, `ci-cd`, `documentation`, `performance`, `soap`, `bug`, `automation`, `refactor`, `enhancement`) | 13 of 20 in use |
+| Units of delivery | Pull requests, each closing one or more issues | 27 merged |
+| Quality gate | GitHub Actions, 6 jobs, required green before merge | 1 pipeline |
+
+The 1.1 and 1.2 releases were run from a written plan and a branch per pull request rather than from
+new milestones; the milestone above covers the 1.0 scope it was opened for and was closed with it.
 
 Each issue carried an **Objective**, **Requirements** and **Acceptance Criteria** as checkboxes, with
 **Dependencies**, **Testing notes** or **Technical considerations** where they added information. That is

@@ -5,7 +5,7 @@ and a percentage.
 
 ## The wrinkle: black-box suites are invisible to ordinary coverage
 
-`jacoco:prepare-agent` instruments the JVM that Surefire forks. That captures the application's own 72
+`jacoco:prepare-agent` instruments the JVM that Surefire forks. That captures the application's own 254
 unit and integration tests perfectly well. It captures **nothing** from the API, UI and BDD suites,
 because those drive the application over HTTP in a *separate process*. From the test JVM's point of
 view, no class in `billing-app` was ever called.
@@ -22,7 +22,7 @@ contributing nothing, when they are the only thing testing several classes.
 
 | Report | What it measures | How to produce it |
 |---|---|---|
-| **In-process** | The application's own 72 unit and integration tests | `mvn clean install` — automatic, no flags |
+| **In-process** | The application's own 254 unit and integration tests | `mvn clean install` — automatic, no flags |
 | **Full-stack** | The above **plus** the API, UI, BDD and reset suites driving the live application | `scripts/coverage.sh` |
 
 ```bash
@@ -56,11 +56,15 @@ its version cannot drift from the plugin's.
 
 | Metric | In-process | Full-stack |
 |---|---|---|
-| Line | 445/489 — **91.0%** | 484/489 — **99.0%** |
-| Branch | 48/54 — **88.9%** | 48/54 — **88.9%** |
-| Instruction | 1892/2070 — 91.4% | 2049/2070 — **99.0%** |
-| Method | 151/164 — 92.1% | 163/164 — **99.4%** |
-| Class | 40/42 — 95.2% | 42/42 — **100%** |
+| Line | 1200/1311 — **91.5%** | 1290/1311 — **98.4%** |
+| Branch | 155/186 — **83.3%** | 163/186 — **87.6%** |
+| Instruction | 5009/5524 — 90.7% | 5408/5524 — **97.9%** |
+| Method | 353/385 — 91.7% | 376/385 — **97.7%** |
+| Class | 72/75 — 96.0% | 75/75 — **100%** |
+
+Measured on 2026-09-15 at 1.2.0, by `scripts/coverage.sh`. The application grew from 42 classes to 75
+in this release, so these are not the same denominators as the 1.1.0 figures and the percentages should
+not be read as a trend.
 
 Generated code (`com/insurancebilling/soap/generated/**`, produced from the XSD by `xjc`) is excluded.
 Coverage of generated code measures the generator, not this project's tests, and including it would pad
@@ -68,31 +72,42 @@ the figure with setters nobody wrote.
 
 ## Every remaining gap, named
 
-Branch coverage is the honest number here: **88.9%, and it did not improve with the black-box suites**,
-because the six missed branches are not reachable by any route through the application. All six, plus
-the five missed lines, are listed below. None is a hole in the testing; each is defensive code whose
-failing side cannot occur.
+Branch coverage is the honest number here: **87.6%**, and it improves only slightly with the black-box
+suites, because most of what is missed is not reachable by any route through the application. **21
+missed lines and 23 missed branches**, across sixteen classes — every one of them listed below.
 
-| Location | Missed | Why it is unreachable |
-|---|---|---|
-| `Invoice:118` | `policy == null` half of `policy != null && !policy.isActive()` | Every invoice is created against a policy. Only a unit test constructing a detached `Invoice` could take this branch. |
-| `Invoice:182` | `if (status == CANCELLED) return;` in `refreshStatus` | `refreshStatus` runs only after a payment is accepted, and a cancelled invoice refuses payment earlier at line 105. The guard protects against a state that cannot arrive. |
-| `Invoice:187, 190` | the `else { status = UNPAID; }` branch | `refreshStatus` runs only after a payment has been added, so `amountPaid` is always positive. |
-| `InvoiceWebController:78` | `form.getMethod() == null` | The form's `<select>` always submits a value. |
-| `InvoiceWebController:97` | `rawAmount == null` half of `rawAmount == null \|\| rawAmount.isBlank()` | An HTML form submits an empty string, never null, so only `isBlank()` is reached. |
-| `SeedDataLoader:79, 80` | `if (customers.count() > 0) return;` | An idempotence guard. Reset deletes every row before calling `load()`, so the early return never fires. |
-| `InvoiceStatusEndpoint:76, 77` | `catch (DatatypeConfigurationException)` | The JDK always supplies a datatype factory. |
+| Class | Lines | Branches | What is missed, and why |
+|---|---:|---:|---|
+| `BankAccountReference` | 2 | 4 | Validation halves that a caller cannot reach: the record refuses a null holder and anything but three digits, and every construction path already filters those. |
+| `BillingService` | 1 | 4 | Null-defaulting on optional request fields (`billingType`, `description`, bank details) whose absent case the API schema does not permit. |
+| `Invoice` | 2 | 3 | The `policy == null` half of a null-and-state check, the cancelled guard in `refreshStatus`, and its `else → UNPAID` branch. All three protect against states that cannot arrive; unchanged from 1.1.0. |
+| `BillingAccountWebController` | 2 | 2 | The empty-terms fallback and the unknown-tab fallback, both reachable only by hand-editing a URL. |
+| `AgentConsoleWebController` | 2 | 1 | The empty-portfolio branch. Every run has seeded accounts, so an empty book never renders. |
+| `Installment` | 2 | 1 | State transitions from a status the schedule generator never produces. |
+| `PaymentInformationResponse` | 2 | 1 | The no-bank-details branch, for an account opened without them. |
+| `SeedDataLoader$SeedDataWriter` | 1 | 2 | The idempotence guard. Reset deletes every row before `load()`, so the early return never fires. |
+| `InvoiceStatusEndpoint` | 2 | 0 | `catch (DatatypeConfigurationException)`. The JDK always supplies a datatype factory. |
+| `InvoiceWebController` | 0 | 2 | `form.getMethod() == null` and the `rawAmount == null` half of a null-or-blank check. An HTML form submits an empty string, never null. |
+| `LocalisationConfiguration$SupportedLocalesOnly` | 1 | 1 | The branch taken when the request names a language the console is not published in *and* no cookie is set. |
+| `PolicyTerm` | 1 | 1 | A guard against posting to a term that is not in force, refused earlier by the service. |
+| `BillingAccount`, `BillingAccountController`, `BillingTransaction` | 1 each | 0 | Accessors with no caller in any current path. |
+| `WebPageModelAdvice` | 0 | 1 | The blank-query-string branch; every console URL that reaches it has a path. |
 
 Being able to account for every uncovered branch is worth more than the percentage. The figure could be
 pushed to 100% by deleting the defensive guards or by writing tests that construct impossible states
 through reflection — both of which would make the code worse to chase a number.
+
+**One of these is a real gap rather than an unreachable one.** `AgentConsoleWebController`'s
+empty-portfolio branch is perfectly reachable — it just needs a database with no accounts in it, which
+no suite arranges because every suite seeds. It is named here rather than quietly counted among the
+defensive ones.
 
 ## What coverage found
 
 Adding coverage was not a documentation exercise; it located real problems that the test list could not
 show, because nothing *looked* missing:
 
-**Dead code — five members with zero call sites, now deleted:**
+**Dead code — six members with zero call sites, now deleted:**
 `InvoiceService.findByNumber`, `Policy.lapse()`, `Policy.getInvoices()`, `Customer.getPolicies()`,
 `Money.round()`, `Payment.getInvoice()`. Earlier audits had asserted the repository contained no dead
 code; coverage disproved that in one run.
@@ -118,7 +133,7 @@ Worth being clear about, because a high number invites the wrong conclusion:
 - **It measures execution, not assertion.** A test that calls every method and asserts nothing scores
   identically to one that checks every outcome. 99% line coverage is consistent with a suite that proves
   nothing.
-- **Branch coverage is the more honest metric**, and it is the lower one here — 88.9% against 99.0% line.
+- **Branch coverage is the more honest metric**, and it is the lower one here — 87.6% against 98.4% line.
   Quoting only the line figure would be the flattering half of the truth.
 - **It says nothing about the cases you did not think of.** Every payment rule is covered; coverage
   cannot tell me whether a rule is *missing*. Concurrent payments against the same invoice are untested,
@@ -137,7 +152,7 @@ already producing:
 
 | Job | What it contributes |
 |---|---|
-| `build` | `jacoco.exec` — the application's own 72 unit and integration tests |
+| `build` | `jacoco.exec` — the application's own 254 unit and integration tests |
 | `api-tests`, `ui-tests`, `bdd-tests` | one `jacoco-e2e.exec` each, written by the agent inside the application process those suites drove |
 | `coverage` | downloads all four, merges them, renders the report, sends it to Codecov and SonarQube Cloud |
 
@@ -153,11 +168,15 @@ to run every suite a second time inside one job. That is true of the obvious app
 this one: the suites already run, attaching the agent costs them almost nothing, and the extra job only
 collects what they recorded.
 
-One difference from a local `scripts/coverage.sh` run remains, and it has been measured rather than
-estimated: CI reports **97.1%** line coverage against the 99.0% above. Compared class by class, the
-entire difference is `TestSupportController` — 7 of 16 lines in CI, 16 of 16 locally. The `test-support`
-group wipes the database, so it is excluded from CI and runs last and alone locally. The figures in this
-document are from a local run, which includes it.
+One difference from a local `scripts/coverage.sh` run remains, and it was measured rather than
+estimated at 1.1.0: CI reported **97.1%** line coverage against 99.0% locally, and compared class by
+class the entire difference was `TestSupportController` — 7 of 16 lines in CI, 16 of 16 locally. The
+`test-support` group wipes the database, so it is excluded from CI and runs last and alone locally. The
+figures in this document are from a local run, which includes it.
+
+**That class-by-class comparison has not been repeated at 1.2.0.** The cause has not changed and the
+same gap is expected, but the exact CI percentage for this release is whatever the badge reports, not a
+number restated here.
 
 The tooling that consumes these reports — SonarQube Cloud, Codecov, and what each is and is not allowed
 to block — is described in [`code-quality.md`](code-quality.md).

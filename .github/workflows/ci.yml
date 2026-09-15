@@ -415,6 +415,60 @@ jobs:
           pattern: jacoco-exec-*
           path: coverage-data
 
+      # The test reports, so the documented counts can be checked against what actually ran. See
+      # DEF-014: the figures in the README and the docs used to be typed by hand and drifted apart
+      # from the suite and from each other.
+      - name: Download every suite's test reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-test-reports'
+          path: test-reports
+
+      - name: Download the Cucumber reports
+        uses: actions/download-artifact@v4
+        with:
+          name: cucumber-reports
+          path: cucumber-reports
+
+      # Put each report back where scripts/count_tests.py expects to find it. The artifacts flatten
+      # the module structure, so this rebuilds it rather than teaching the script about CI's layout -
+      # the script has to work identically on a developer's machine, which is where it is run before
+      # committing an updated inventory.
+      - name: Reassemble the reports
+        run: |
+          mkdir -p billing-app/target/surefire-reports \
+                   qa-api-tests/target/failsafe-reports \
+                   qa-ui-tests/target/failsafe-reports \
+                   qa-bdd-tests/target/cucumber-reports
+          cp test-reports/app-test-reports/*.xml billing-app/target/surefire-reports/ 2>/dev/null || true
+          cp test-reports/api-test-reports/*.xml qa-api-tests/target/failsafe-reports/ 2>/dev/null || true
+          cp test-reports/ui-test-reports/*.xml qa-ui-tests/target/failsafe-reports/ 2>/dev/null || true
+          cp cucumber-reports/*.json qa-bdd-tests/target/cucumber-reports/ 2>/dev/null || true
+
+      # Two things are checked, and they fail for different reasons.
+      #
+      # The first regenerates the inventory from those reports and diffs it against the committed one:
+      # it fails when the suite changed and nobody re-ran scripts/count-tests.sh.
+      #
+      # The second checks every figure quoted in the README and the docs against that inventory: it
+      # fails when somebody edited a number by hand. A stale count now fails the pipeline exactly as a
+      # broken test does.
+      #
+      # The API total legitimately differs here: the test-support group wipes the database and cannot
+      # run in the parallel pipeline, so CI's reports are four tests short of a local full run. The
+      # diff is therefore reported and not gated; check-doc-numbers.sh, which reads the committed
+      # inventory, is the gate.
+      - name: Check the documented test counts
+        run: |
+          scripts/count-tests.sh --check > /tmp/inventory-from-ci.md
+          if ! diff -q /tmp/inventory-from-ci.md docs/test-inventory.md > /dev/null; then
+            echo "::notice::The inventory regenerated from this run differs from the committed one."
+            echo "Expected for the 4 test-support tests CI cannot run. Anything else means"
+            echo "scripts/count-tests.sh needs re-running after a full local run."
+            diff /tmp/inventory-from-ci.md docs/test-inventory.md || true
+          fi
+          scripts/check-doc-numbers.sh
+
       # Each artifact holds a file with the same name, so they are renamed on the way in. The merge
       # execution in billing-app/pom.xml picks up jacoco.exec and anything matching jacoco-e2e*.exec.
       - name: Collect the execution data

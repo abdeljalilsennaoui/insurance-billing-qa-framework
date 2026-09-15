@@ -18,6 +18,17 @@ honestly. "Automated" means a named test actually covers the case — the mappin
 | `SEED-INV-005` | 600.00 | Cancelled |
 | `SEED-INV-006` | 270.00 | On a lapsed policy |
 
+**Seeded billing accounts referenced below:**
+
+| Account | Insured | Term total | Why it exists |
+|---|---|---|---|
+| `ACCT-100001` | Dominique Fortin | 1591.60 | Premium and tax divide evenly across twelve |
+| `ACCT-100002` | Élise Marchand | 1112.00 | Does **not** divide evenly, and carries a returned payment and its fee |
+
+`ACCT-100002` is the fixture for anything about rounding or failed payments. The accented name is
+deliberate: it is a UTF-8 round trip through JSON, JPA, Thymeleaf and SOAP that a test would otherwise
+have to contrive.
+
 ---
 
 ## Payment processing
@@ -327,6 +338,208 @@ payment progress stays visible, while the overdue flag still reports the latenes
 
 ---
 
+## Billing accounts, terms and the ledger
+
+### TC-023 — An installment schedule collects exactly what the term is worth
+
+| | |
+|---|---|
+| **Priority** | Critical |
+| **Automated** | Yes — domain unit, API, UI and BDD |
+
+**Preconditions:** a term of 1000.00 premium, 90.00 tax and a 2.00 installment fee, monthly.
+
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Open the term's payment schedule | Twelve installments listed, numbered 1 to 12 |
+| 2 | Read installment 1 | 90.87 — premium 83.37, tax 7.50, fee 2.00 |
+| 3 | Read installment 2 | 92.83 — premium 83.33 |
+| 4 | Read installment 12 | 92.83 |
+| 5 | Add up the twelve amounts due | Exactly 1112.00 |
+
+**Why the remainder is on installment 1.** 1000.00 over twelve is 83.3333; twelve payments of 83.33
+collect four cents short. The remainder goes on the **down payment** rather than the last installment
+because the down payment is the figure quoted at bind time, and a cent stranded on the final
+installment leaves a balance that trips a collection notice on a fully paid term.
+
+---
+
+### TC-024 — A payment settles the oldest unpaid installment first
+
+| | |
+|---|---|
+| **Priority** | Critical |
+| **Automated** | Yes — domain unit, API and BDD |
+
+**Preconditions:** `ACCT-100001`-shaped term, 1591.60, nothing paid.
+
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Read the term balance | 1591.60 — the whole term is posted at new business |
+| 2 | Read installments remaining | 12 |
+| 3 | Pay 130.80 | Accepted |
+| 4 | Read installment 1 | `PAID` |
+| 5 | Read installment 2 | Not `PAID` |
+| 6 | Read installments remaining, then the balance | 11, and 1460.80 |
+
+---
+
+### TC-025 — A returned payment reverses it, charges a fee and counts against the account
+
+| | |
+|---|---|
+| **Priority** | Critical |
+| **Automated** | Yes — domain unit, API, UI and BDD |
+
+**Preconditions:** a term of 1112.00 with a payment of 90.87 recorded.
+
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Read the balance | 1021.13 |
+| 2 | Return the payment for `INSUFFICIENT_FUNDS` | Accepted |
+| 3 | Read the ledger | A `PAYMENT_RETURNED` line and an `NSF_FEE` line, both posted |
+| 4 | Read the reversal's columns | Premium, tax and fee each the negative of the original |
+| 5 | Read the balance | 1137.00 — 1112.00 restored, plus the 25.00 fee |
+| 6 | Read installment 1 | `REVERSED`, not `SCHEDULED` |
+| 7 | Read the account's tallies | 1 returned payment, 1 NSF |
+
+**The distinction in step 7.** Every refused payment is a returned payment; only one refused for want
+of funds is an NSF. Returning a payment for `ACCOUNT_CLOSED` instead charges no fee and leaves the NSF
+tally at zero — a policy held on an account the bank closed has a payment problem, not a funding
+problem, and collections treats the two differently.
+
+---
+
+### TC-026 — The same payment cannot be returned twice
+
+| | |
+|---|---|
+| **Priority** | High |
+| **Automated** | Yes — API and BDD |
+
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Pay, then return the payment | Accepted |
+| 2 | Return the same payment again | `422`, code `PAYMENT_ALREADY_RETURNED` |
+| 3 | Read the balance | Unchanged by the second attempt — one fee, not two |
+
+`422` rather than `400`: the request is well formed and was refused by a billing rule. That split is a
+hard rule throughout this API.
+
+---
+
+### TC-027 — Bank details cannot be read back in full, anywhere
+
+| | |
+|---|---|
+| **Priority** | Critical |
+| **Automated** | Yes — domain unit, API and Cypress |
+
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Open the account summary | Institution `***`, branch `*****`, account `****871` |
+| 2 | `GET /api/accounts/ACCT-100002` | The same masked values; no field holds more |
+| 3 | Search the whole response for an unmasked number | Absent |
+| 4 | Read `BankAccountReference` | No field exists that could hold a full number |
+
+**Why step 4 is the real test.** Steps 1–3 would also pass if a filter were masking on the way out,
+and a filter can be bypassed by the next endpoint somebody adds. The account number is never stored, so
+there is nothing to leak — the test passes for a structural reason rather than a defensive one.
+
+---
+
+### TC-028 — The account summary answers "what do I owe and when"
+
+| | |
+|---|---|
+| **Priority** | High |
+| **Automated** | Yes — UI and Cypress |
+
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Open `/accounts/ACCT-100002` | Insured and account reference in the context bar |
+| 2 | Read the billing panel | Total balance, unapplied amount, next payment date and amount |
+| 3 | Read the tallies | Returned payments and NSFs to date, both 1 |
+| 4 | Read the payment panel | Plan, method, holder, and the masked bank details |
+
+---
+
+### TC-029 — Every line of the ledger agrees with the balance beside it
+
+| | |
+|---|---|
+| **Priority** | Critical |
+| **Automated** | Yes — domain unit, API, UI and BDD |
+
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Open the transaction history | Newest line first |
+| 2 | Read the columns | Amount split into premium, tax, fee and suspense |
+| 3 | Walk the lines oldest to newest, adding the amounts | Each line's running balance equals the sum so far |
+| 4 | Compare the newest line's balance with the term balance | Identical |
+
+The balance is **derived** from the ledger rather than stored, so step 3 is an invariant rather than a
+spot check: there is no second copy of the figure that could disagree.
+
+---
+
+### TC-030 — The console is published in both official languages
+
+| | |
+|---|---|
+| **Priority** | High |
+| **Automated** | Yes — application, UI, BDD and Cypress |
+
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Open any console page | English |
+| 2 | Click **Français** | The same page, same query string, in French |
+| 3 | Read a money figure | `1 591,60 $` where English shows `$1,591.60` |
+| 4 | Read a date | Formatted for the locale, not reformatted English |
+| 5 | Read a status pill | Translated words, identical `data-status` attribute |
+| 6 | Search the rendered page for `??` | Absent — Thymeleaf writes `??key??` for a missing translation |
+
+Step 5 is why the automation asserts attributes rather than display copy: a suite reading the words
+would pass in English and fail in French while the application behaved identically.
+
+---
+
+### TC-031 — The agent console shows the whole book with a total that adds up
+
+| | |
+|---|---|
+| **Priority** | High |
+| **Automated** | Yes — application, UI, BDD and Cypress |
+
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Open `/agent` | A row per term: policy, insured, product, term status, effective, expiry, balance |
+| 2 | Read the order | Ascending by policy number |
+| 3 | Add up the balance column | Equals the **Total** row |
+| 4 | Click a policy number | That term's header and panels appear below; the row is marked as selected |
+| 5 | Change tab | The same term stays selected |
+
+---
+
+### TC-032 — The agent and the policyholder are shown the same figures
+
+| | |
+|---|---|
+| **Priority** | Critical |
+| **Automated** | Yes — application, UI and BDD |
+
+| Step | Action | Expected result |
+|---|---|---|
+| 1 | Open a term's schedule on `/accounts/{ref}/terms` | Twelve amounts due |
+| 2 | Open the same term's schedule on `/agent` | The same twelve amounts, in the same order |
+| 3 | Repeat for the transaction history | The same running balances |
+
+**Why this is a test and not an assumption.** Both screens render one Thymeleaf fragment, so they
+cannot disagree by construction — which is exactly the kind of claim that stops being true the first
+time somebody is in a hurry and copies the markup. An agent quoting a balance the customer cannot see
+on their own screen is the failure being guarded against.
+
+
 ## Not automated
 
 Cases kept manual, with the reason:
@@ -337,3 +550,5 @@ Cases kept manual, with the reason:
 | TC-020 — H2 console at `/h2-console` is reachable for debugging | A development convenience, not product behaviour. |
 | TC-021 — Application log contains no stack traces after a clean suite run | Checked by reading the log; asserting on log contents would be brittle. |
 | TC-022 — Reset endpoint is absent when `qa.test-support.enabled` is false | The *absence* case stays manual: automating it needs a second application context with different properties, which is more machinery than the risk warrants. The endpoint's **behaviour** when enabled is now automated in `ResetEndpointIT`, after coverage showed it at zero lines covered. |
+| TC-033 — The agent console stays readable with a book of several hundred terms | The grid is not paginated (see the note in `AgentConsoleWebController`). Until it is, this is a judgement about legibility rather than a pass or fail, and automating it would assert a threshold nobody has agreed. |
+| TC-034 — French copy reads as insurance French, not as translated English | Parity and formatting are automated; register and terminology are not machine-checkable. A reviewer who works in French has to read it. |
