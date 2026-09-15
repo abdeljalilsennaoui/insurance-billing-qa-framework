@@ -1,6 +1,6 @@
 # Defect reports
 
-Twelve defects found while building and stabilising this project. Every one was actually encountered —
+Fourteen defects found while building and stabilising this project. Every one was actually encountered —
 none is an illustrative example written to fill a template. Each is linked to the commit that fixed it,
 so the claim can be checked against the history.
 
@@ -23,6 +23,8 @@ or testing the wrong thing.
 | DEF-010 | Surefire claims an `*IT` class and runs it without an application | Medium | Coverage work | in PR #42 |
 | DEF-011 | `stalenessOf` escapes as a CDP error on a CI runner | High | CI, not local | in PR #42 |
 | DEF-012 | Overdue status decided by the host's default time zone | High | SonarQube Cloud static analysis | in PR #49 |
+| DEF-013 | Language switch renders with no destination on a new page | Medium | Agent console tests | `4f2cfde` |
+| DEF-014 | Documented test counts drifted apart from the suite | Low | Documentation audit | in PR #58 |
 
 ---
 
@@ -457,12 +459,126 @@ written the same way would have found it — and the coverage figure, being a re
 than of correctness, reported the defective lines as fully exercised. It took a tool that reads the
 source instead of running it.
 
-## Observations across the twelve
+## DEF-013 — Language switch renders with no destination on a new page
 
-- **Five of twelve were found by automated tests** (DEF-001, DEF-002, DEF-006, DEF-008, DEF-011), two by
-  **manual exploratory checking** (DEF-003, DEF-004), three only by **deliberately verifying the tooling did
-  what it was told** (DEF-005, DEF-007, DEF-009), one by **adding coverage measurement** (DEF-010), and one
-  by **static analysis** (DEF-012).
+**Severity:** Medium · **Priority:** Medium · **Component:** Web console / Spring MVC configuration
+
+**Found by:** a test written for the agent console, `theLanguageSwitchKeepsTheAgentInPlace`. Not by
+looking at the page — the switch is present, styled and clickable, and the fault is invisible until
+somebody clicks it.
+
+**Environment:** JDK 21, Spring Boot 3.5.16. Reproducible anywhere.
+
+**Preconditions:** the agent console exists at `/agent` and renders `fragments/header`.
+
+**Steps to reproduce**
+
+1. Open `/agent`.
+2. Click **Français**.
+
+**Expected:** the same page, in French — the behaviour every other console page has.
+
+**Actual:** the link has no usable destination. The header renders
+`th:href="@{${currentPath}(lang='fr')}"` against a `currentPath` that is null on this page, so the
+reader goes nowhere useful and the console is effectively English-only for them.
+
+**Impact:** a bilingual console that is not bilingual on one of its screens. Low severity in the sense
+that nothing is miscalculated; higher than it looks in the sense that the whole point of publishing in
+both official languages is that a French reader is never stranded, and this stranded them silently.
+
+**Root cause:** `WebPageModelAdvice` supplies `currentPath` and is declared
+`@ControllerAdvice(assignableTypes = {InvoiceWebController.class, BillingAccountWebController.class})`.
+The scoping is deliberate and correct — an untargeted advice would also run for every JSON endpoint —
+but it means **a new screen has to be added to that list, and nothing fails when it is not**. Thymeleaf
+renders a null model attribute as an empty string rather than raising, so the page is served with a
+200 and looks finished.
+
+**Resolution:** `AgentConsoleWebController` added to the advice, and a note in the class Javadoc saying
+that any page rendering `fragments/header` belongs there.
+
+**Regression guard:** `LocalisedConsoleWebTest.everyConsolePageOffersAWorkingLanguageSwitch` walks
+**every console path** and asserts the switch points back at that path. Written against the list of
+pages rather than the list of controllers on purpose: the controller list is the thing that was wrong,
+so a test reading it would have agreed with the defect.
+
+**Lesson.** This is the same shape as DEF-005 and DEF-007 — a configuration that silently does less
+than it appears to. The pattern worth naming is *registration by enumeration*: anything that works by
+listing the participants will eventually be missing one, and the test has to be written against the
+population rather than against the list.
+
+---
+
+## DEF-014 — Documented test counts drifted apart from the suite
+
+**Severity:** Low · **Priority:** Medium · **Component:** Documentation
+
+**Found by:** an audit of the documentation before the 1.2.0 release. No test could have found it,
+because no test read prose.
+
+**Environment:** the repository at `bb00237`, before this release.
+
+**Steps to reproduce**
+
+1. Read `README.md:25` — "**171**, all passing".
+2. Read `docs/test-report.md:12` — 165.
+3. Read `docs/test-strategy.md:244` — nine defects. `README.md:29` — 12. `docs/test-report.md:301` —
+   eleven.
+
+**Expected:** one number per fact, everywhere.
+
+**Actual:** eight figures disagreed across five documents:
+
+| Claim | Said | Also said |
+|---|---|---|
+| Total tests | 171 (README, test-strategy) | 165 (test-report, code-quality) |
+| Defects | 12 (README) | eleven (test-report), nine (test-strategy) |
+| API tests | 52 (README) | 54 (test-strategy) |
+| Application integration | 45 (README) | 39 (test-strategy) |
+| Application's own tests | 72 (coverage) | 66 (test-report) |
+| TestNG groups | 7/33/52 (README) | 6/32/50 (defect-reports) |
+| `coverage.md:95` | "five members" | then lists six |
+| `test-report.md:10` | `billing-app` 1.0.0 | the project was 1.1.0 |
+
+**Impact:** low in itself — nothing is miscalculated and no user is affected. It matters because of
+what it is evidence of. This repository's argument is that its claims can be checked; a reader who
+finds two numbers for the same fact has been given a reason to stop checking the others. In a
+commercial setting the same drift in a test summary report is what makes a release sign-off worthless.
+
+**Root cause:** every figure was typed by hand, in several places, and updated by whoever remembered.
+Adding roughly three hundred tests across four pull requests made the divergence obvious, but the
+mechanism was there from the first document: **a number in prose has no author and no owner**, so it
+ages the moment the thing it describes changes.
+
+**Resolution:** the counts are now generated, not typed.
+
+- `scripts/count-tests.sh` parses the surefire and failsafe XML and the Cucumber JSON of the last run
+  into `docs/test-inventory.md`.
+- Every headline figure in the documents is wrapped in a marker — `<!--count:api-->108<!--/count-->` —
+  naming which inventory total it claims to be.
+- `scripts/check-doc-numbers.sh` compares the two and exits non-zero on any disagreement, naming the
+  file, the line, the claim and the truth.
+- CI runs that check, so the pipeline fails on a stale number exactly as it fails on a broken test.
+
+Every figure in the table above was reconciled in the same change.
+
+**Why a marker rather than parsing the prose.** A check that guessed which numbers in a document were
+test counts would have to ignore the seeded amounts, the performance figures, the coverage percentages
+and the dates — and would either miss real drift or fail on numbers that are not claims about the
+suite. The marker makes the author state the intent, which is the part a regex cannot recover.
+
+**Lesson.** Documentation that can go stale silently is a defect with a long fuse, and the fix is the
+same one applied to flaky tests: remove the human step. The screenshots in this repository were already
+generated by the UI suite for precisely this reason; the counts had simply never been given the same
+treatment.
+
+
+## Observations across the fourteen
+
+- **Six of fourteen were found by automated tests** (DEF-001, DEF-002, DEF-006, DEF-008, DEF-011,
+  DEF-013), two by **manual exploratory checking** (DEF-003, DEF-004), three only by **deliberately
+  verifying the tooling did what it was told** (DEF-005, DEF-007, DEF-009), one by **adding coverage
+  measurement** (DEF-010), one by **static analysis** (DEF-012), and one by **auditing the
+  documentation** (DEF-014).
 - **DEF-011 was found only by CI.** It passed every local run, including the two-consecutive-passes
   isolation check. That is the clearest evidence in this repository for why the pipeline is the gate and a
   local green run is not.
@@ -476,3 +592,6 @@ source instead of running it.
   tests are written could, because the suite and the application read the date from the same default
   zone and therefore agreed with each other. It is also the clearest limit on the coverage number in
   this repository: every line involved reported as covered, at 99%, throughout.
+- **DEF-013 and DEF-014 are the same defect in two materials.** Both are a list that has to be kept in
+  step with a population by somebody remembering: the controllers named in a `@ControllerAdvice`, and
+  the test counts typed into prose. Both were fixed the same way — check the population, not the list.

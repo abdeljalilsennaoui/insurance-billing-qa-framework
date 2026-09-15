@@ -139,7 +139,7 @@ This was the one to take seriously rather than suppress, and taking it seriously
 **Whether an invoice was overdue was decided by `LocalDate.now()` reading the server's default time
 zone.** Moving the process to a machine in another zone changed invoice statuses by up to a day, and
 nothing in the suite could catch it: every test evaluated the rule in the same zone it was written in,
-so the test and the code made the identical assumption and agreed with each other. 165 tests and 99%
+so the test and the code made the identical assumption and agreed with each other. The 165 tests and 99%
 line coverage, and the affected lines all reported as covered — because they *ran*. Coverage records
 execution, not correctness.
 
@@ -150,7 +150,7 @@ clock at an instant where the UTC date and the business-zone date differ; it fai
 unfixed code. Full write-up in [`defect-reports.md`](defect-reports.md) as DEF-012.
 
 This is the strongest argument in the repository for running a tool that reads the source rather than
-executes it. Static analysis found in one pass what 165 executing tests structurally could not.
+executes it. Static analysis found in one pass what those 165 executing tests structurally could not.
 
 ### `java:S6809` — a check rather than a fix
 
