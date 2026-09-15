@@ -337,6 +337,7 @@ and then silently running every test class instead.
 | [Code coverage](docs/coverage.md) | Line and branch coverage, how black-box suites are measured, every remaining gap named |
 | [Code quality tooling](docs/code-quality.md) | JaCoCo, SonarQube Cloud and Codecov — what each answers, how they are configured, what is allowed to block a merge |
 | [Design rationale](docs/design-rationale.md) | How the framework is built and why, by file path — including the decisions that were wrong first, and the limits of what this repository claims |
+| [Wiki pages](wiki) | The published [project wiki](../../wiki), kept in the repository so its pages get the same review and CI as the code |
 
 ## A note on the two CI-visible workflows
 
