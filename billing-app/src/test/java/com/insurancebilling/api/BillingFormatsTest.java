@@ -20,7 +20,9 @@ class BillingFormatsTest {
   private static final Locale EN = Locale.of("en", "CA");
   private static final Locale FR = Locale.of("fr", "CA");
 
-  private final BillingFormats formats = new BillingFormats();
+  /** Fixed zone, so a timestamp assertion names a wall-clock time rather than the runner's. */
+  private final BillingFormats formats =
+      new BillingFormats(java.time.Clock.system(java.time.ZoneId.of("America/Toronto")));
 
   @Test
   @DisplayName("English writes the symbol first and groups with commas")
@@ -86,9 +88,36 @@ class BillingFormatsTest {
   }
 
   @Test
+  @DisplayName("an instant is rendered as a readable date and time, not as machine text")
+  void anInstantIsRenderedReadably() {
+    java.time.Instant instant = java.time.Instant.parse("2026-09-15T03:29:51.812146Z");
+
+    String english = formats.dateTime(instant, EN);
+
+    assertThat(english)
+        .as("2026-09-15T03:29:51.812146Z is precise, wide, and of no use on a statement")
+        .doesNotContain("T")
+        .doesNotContain("Z")
+        .doesNotContain("812146");
+    assertThat(english).contains("2026");
+  }
+
+  @Test
+  @DisplayName("an instant is rendered in the business zone, not the host's")
+  void anInstantIsRenderedInTheBusinessZone() {
+    // 03:29 UTC on the 15th is 23:29 on the 14th in Toronto. A statement must say the 14th.
+    java.time.Instant instant = java.time.Instant.parse("2026-09-15T03:29:51Z");
+
+    assertThat(formats.dateTime(instant, EN))
+        .as("the day a payment landed on cannot depend on where the server is")
+        .contains("14");
+  }
+
+  @Test
   @DisplayName("a missing amount or date renders as nothing, not as the word null")
   void missingValuesRenderAsNothing() {
     assertThat(formats.money(null, EN)).isEmpty();
     assertThat(formats.date(null, EN)).isEmpty();
+    assertThat(formats.dateTime(null, EN)).isEmpty();
   }
 }

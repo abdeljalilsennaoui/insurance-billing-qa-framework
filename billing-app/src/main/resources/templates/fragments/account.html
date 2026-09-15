@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  The context bar names who and what is on screen. On a screen full of figures, the most common
+  mistake is reading the right numbers for the wrong policy, so the identifiers stay visible above
+  every panel rather than only on the page that loaded them.
+-->
+<div th:fragment="context (account)" class="context-bar" data-testid="account-context">
+  <div class="context-item">
+    <span class="context-label" th:text="#{account.context.insured}">Insured</span>
+    <span class="context-value" data-testid="context-insured" th:text="${account.customerName}"></span>
+  </div>
+  <div class="context-item">
+    <span class="context-label" th:text="#{account.context.account}">Account</span>
+    <span class="context-value" data-testid="context-account" th:text="${account.accountReference}"></span>
+  </div>
+</div>
+
+<nav th:fragment="nav (account, active)" class="side-nav" data-testid="account-nav">
+  <a data-testid="nav-account-summary"
+     th:classappend="${active == 'summary'} ? 'current' : ''"
+     th:href="@{/accounts/{ref}(ref=${account.accountReference})}"
+     th:text="#{account.nav.summary}">Account summary</a>
+  <a data-testid="nav-account-terms"
+     th:classappend="${active == 'terms'} ? 'current' : ''"
+     th:href="@{/accounts/{ref}/terms(ref=${account.accountReference})}"
+     th:text="#{account.nav.terms}">Terms</a>
+  <a data-testid="nav-account-invoices" th:href="@{/invoices}" th:text="#{account.nav.invoices}">Invoices</a>
+</nav>
+
+</body>
+</html>

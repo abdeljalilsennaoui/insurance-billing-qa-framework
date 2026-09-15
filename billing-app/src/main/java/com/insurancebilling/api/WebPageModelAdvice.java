@@ -14,11 +14,33 @@ import org.springframework.web.bind.annotation.ModelAttribute;
  * <p>Scoped to the controllers that render HTML. A {@code @ControllerAdvice} with no {@code
  * assignableTypes} would also run for every JSON endpoint, which would be harmless and pointless.
  */
-@ControllerAdvice(assignableTypes = InvoiceWebController.class)
+@ControllerAdvice(
+    assignableTypes = {InvoiceWebController.class, BillingAccountWebController.class})
 public class WebPageModelAdvice {
 
+  /**
+   * The page the reader is on, query string and all, with any existing {@code lang} removed.
+   *
+   * <p>The query string is the part that is easy to forget and the part that matters. A switch that
+   * kept only the path would drop the reader from the schedule tab back to the summary, and from a
+   * filtered invoice list back to the unfiltered one - changing what they were looking at, not just the
+   * language it was written in.
+   *
+   * <p>{@code lang} itself is stripped so the link builder can add the new one without the old value
+   * surviving alongside it.
+   */
   @ModelAttribute("currentPath")
   public String currentPath(HttpServletRequest request) {
-    return request.getRequestURI();
+    String query = request.getQueryString();
+    if (query == null || query.isBlank()) {
+      return request.getRequestURI();
+    }
+    String withoutLanguage =
+        java.util.Arrays.stream(query.split("&"))
+            .filter(parameter -> !parameter.startsWith("lang="))
+            .collect(java.util.stream.Collectors.joining("&"));
+    return withoutLanguage.isEmpty()
+        ? request.getRequestURI()
+        : request.getRequestURI() + "?" + withoutLanguage;
   }
 }

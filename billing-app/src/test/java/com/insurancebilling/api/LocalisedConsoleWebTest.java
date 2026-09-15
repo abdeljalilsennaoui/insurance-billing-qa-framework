@@ -116,6 +116,28 @@ class LocalisedConsoleWebTest {
   }
 
   @Test
+  @DisplayName("the language switch keeps the query string, not just the path")
+  void theLanguageSwitchKeepsTheQueryString() throws Exception {
+    // Found by a browser test: switching language on the schedule tab dropped the reader back to the
+    // summary, because the link kept only the path. The same fault lost the status filter on the
+    // invoice list. Asserted here as well because this runs in milliseconds.
+    Assertions.assertThat(render("/invoices?status=OVERDUE"))
+        .contains("/invoices?status=OVERDUE&amp;lang=fr")
+        .contains("/invoices?status=OVERDUE&amp;lang=en");
+  }
+
+  @Test
+  @DisplayName("the switch does not carry the previous language alongside the new one")
+  void theSwitchDoesNotCarryThePreviousLanguage() throws Exception {
+    String html = render("/invoices?status=OVERDUE&lang=fr");
+
+    Assertions.assertThat(html)
+        .as("lang must be replaced, not appended, or the first value would win")
+        .contains("/invoices?status=OVERDUE&amp;lang=en")
+        .doesNotContain("lang=fr&amp;lang=en");
+  }
+
+  @Test
   @DisplayName("the page declares the language it is written in")
   void thePageDeclaresItsLanguage() throws Exception {
     Assertions.assertThat(render("/invoices")).contains("lang=\"en\"");

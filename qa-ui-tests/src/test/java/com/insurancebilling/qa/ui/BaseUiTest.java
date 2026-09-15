@@ -1,5 +1,6 @@
 package com.insurancebilling.qa.ui;
 
+import com.insurancebilling.qa.api.client.BillingApiClient;
 import com.insurancebilling.qa.api.client.InvoiceApiClient;
 import com.insurancebilling.qa.api.data.BillingTestData;
 import com.insurancebilling.qa.ui.driver.DriverFactory;
@@ -25,6 +26,7 @@ public abstract class BaseUiTest {
 
   protected final BillingTestData testData = new BillingTestData();
   protected final InvoiceApiClient invoices = new InvoiceApiClient();
+  protected final BillingApiClient billing = new BillingApiClient();
 
   @BeforeMethod(alwaysRun = true)
   public void startBrowser() {

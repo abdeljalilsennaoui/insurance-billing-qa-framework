@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="#{invoice.notFound.title}">Not found</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<main>
+  <h1 data-testid="page-title" th:text="#{account.notFound.title}">Billing account not found</h1>
+  <p class="banner error" data-testid="not-found-message" th:text="#{account.notFound.message}">
+    No billing account exists with that reference.
+  </p>
+  <a th:href="@{/invoices}" data-testid="back-to-list-link" th:text="#{invoice.back}">Back to invoices</a>
+</main>
+</body>
+</html>

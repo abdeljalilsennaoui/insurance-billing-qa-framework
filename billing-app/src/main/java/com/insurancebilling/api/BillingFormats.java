@@ -23,6 +23,19 @@ import org.springframework.stereotype.Component;
 @Component("billingFormats")
 public class BillingFormats {
 
+  private final java.time.ZoneId businessZone;
+
+  /**
+   * Takes the business clock's zone, not the host's.
+   *
+   * <p>A timestamp rendered in the JVM's default zone would show a policyholder a payment landing on a
+   * different day than the one the platform decided it landed on, for part of every day. That is the
+   * same fault DEF-012 recorded in the overdue rule, arriving through a different door.
+   */
+  public BillingFormats(java.time.Clock businessClock) {
+    this.businessZone = businessClock.getZone();
+  }
+
   /**
    * Formats an amount as currency for the given locale.
    *
@@ -39,6 +52,22 @@ public class BillingFormats {
         .format(amount)
         .replace(' ', ' ')
         .replace(' ', ' ');
+  }
+
+  /**
+   * Formats an instant as a date and time in the reader's language and the platform's business zone.
+   *
+   * <p>A raw {@code Instant} renders as {@code 2026-09-15T03:29:51.812146Z}, which is precise, wide, and
+   * of no use to anyone reading a statement.
+   */
+  public String dateTime(java.time.Instant instant, Locale locale) {
+    if (instant == null) {
+      return "";
+    }
+    return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)
+        .withLocale(resolve(locale))
+        .withZone(businessZone)
+        .format(instant);
   }
 
   /** Formats a date in the reader's language: {@code Sep 14, 2026} against {@code 14 sept. 2026}. */

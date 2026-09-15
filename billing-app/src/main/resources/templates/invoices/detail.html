@@ -36,7 +36,8 @@
               th:attr="data-status=${invoice.status}"
               th:classappend="'status-' + ${invoice.status}"
               th:text="#{'status.' + ${invoice.status}}"></span>
-        <span th:if="${invoice.overdue}" class="overdue-flag" data-testid="invoice-overdue-flag"
+        <span th:if="${invoice.overdue and invoice.status.name() != 'OVERDUE'}"
+              class="overdue-flag" data-testid="invoice-overdue-flag"
               th:text="#{invoices.overdue}">overdue</span>
       </dd>
 
@@ -90,7 +91,9 @@
             th:attr="data-method=${payment.method}"
             th:text="#{'method.' + ${payment.method}}"></td>
         <td data-testid="payment-reference" th:text="${payment.reference}"></td>
-        <td data-testid="payment-received-at" th:text="${payment.receivedAt}"></td>
+        <td data-testid="payment-received-at"
+            th:attr="data-received-at=${payment.receivedAt}"
+            th:text="${@billingFormats.dateTime(payment.receivedAt, #locale)}"></td>
       </tr>
       </tbody>
     </table>
