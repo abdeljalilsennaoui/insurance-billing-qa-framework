@@ -21,6 +21,23 @@ public class ReferenceGenerator {
     return "INV-" + randomSuffix();
   }
 
+  public String accountReference() {
+    return "ACCT-" + randomSuffix();
+  }
+
+  public String termReference() {
+    return "TERM-" + randomSuffix();
+  }
+
+  /** Prefix for an installment schedule. Each installment appends its own sequence number. */
+  public String installmentPrefix() {
+    return "INS-" + randomSuffix();
+  }
+
+  public String transactionReference() {
+    return "TXN-" + randomSuffix();
+  }
+
   private String randomSuffix() {
     return UUID.randomUUID().toString().substring(0, 8).toUpperCase();
   }
