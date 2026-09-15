@@ -13,9 +13,18 @@ import org.springframework.web.bind.annotation.ModelAttribute;
  *
  * <p>Scoped to the controllers that render HTML. A {@code @ControllerAdvice} with no {@code
  * assignableTypes} would also run for every JSON endpoint, which would be harmless and pointless.
+ *
+ * <p>The cost of that scoping is that a new screen has to be added to the list below, and nothing
+ * fails loudly when it is not: the language switch simply renders with no destination on that one
+ * page. The agent console was added here only after a test went looking for the link. Any further
+ * page that renders {@code fragments/header} belongs in this list too.
  */
 @ControllerAdvice(
-    assignableTypes = {InvoiceWebController.class, BillingAccountWebController.class})
+    assignableTypes = {
+      InvoiceWebController.class,
+      BillingAccountWebController.class,
+      AgentConsoleWebController.class
+    })
 public class WebPageModelAdvice {
 
   /**

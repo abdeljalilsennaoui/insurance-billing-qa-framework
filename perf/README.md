@@ -11,10 +11,16 @@ develop this project.
 |---|---|
 | `10 List invoices` | `GET /api/invoices` |
 | `20 Get invoice` | `GET /api/invoices/{id}` |
+| `25 Get schedule` | `GET /api/terms/{ref}/schedule` |
 | `30 Submit payment` | `POST /api/invoices/{id}/payments` |
+| `40 Get ledger` | `GET /api/terms/{ref}/transactions` |
 
-Each thread first creates its own customer, policy and invoice in a once-only controller, then loops
-over the three operations above.
+Each thread first creates its own customer, policy, invoice, billing account and bound policy term in
+a once-only controller, then loops over the five operations above.
+
+The schedule and the ledger are the two reads a billing screen cannot render without, and they are
+the two whose cost grows with the data: a schedule is twelve rows for a monthly term, and a ledger
+grows for the life of the term. They are measured separately from the invoice reads for that reason.
 
 **Why per-thread fixtures matter here.** If every thread paid against one shared invoice, they would
 race to settle it and most payment requests would be refused with a legitimate `422`
@@ -40,7 +46,45 @@ nothing.
 
 ## Measured results
 
-Run of 2026-09-11, 10 threads, 5s ramp-up, 20 loops — 630 samples, **0% errors**.
+Run of 2026-09-15, 10 threads, 5s ramp-up, 20 loops — 1050 samples, **0% errors**.
+
+| Sampler | Samples | Error % | Mean (ms) | p90 | p95 | p99 | Max | Throughput/s |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `10 List invoices` | 200 | 0.00 | 1.5 | 2.0 | 3.0 | 3.0 | 7 | 43.7 |
+| `20 Get invoice` | 200 | 0.00 | 0.8 | 1.0 | 1.0 | 2.0 | 2 | 43.8 |
+| `25 Get schedule` | 200 | 0.00 | 1.2 | 2.0 | 2.0 | 3.0 | 3 | 43.8 |
+| `30 Submit payment` | 200 | 0.00 | 1.1 | 2.0 | 2.0 | 2.0 | 3 | 43.8 |
+| `40 Get ledger` | 200 | 0.00 | 1.2 | 2.0 | 2.0 | 3.0 | 3 | 43.8 |
+| `01 Create customer` | 10 | 0.00 | 5.8 | 12.0 | 12.0 | 12.0 | 12 | 2.2 |
+| `02 Create policy` | 10 | 0.00 | 3.6 | 5.0 | 5.0 | 5.0 | 5 | 2.2 |
+| `03 Create invoice` | 10 | 0.00 | 2.8 | 4.0 | 4.0 | 4.0 | 4 | 2.2 |
+| `04 Open billing account` | 10 | 0.00 | 1.7 | 3.0 | 3.0 | 3.0 | 3 | 2.2 |
+| `05 Bind policy term` | 10 | 0.00 | 4.1 | 5.0 | 5.0 | 5.0 | 5 | 2.2 |
+| **Total** | **1050** | **0.00** | **1.3** | **2.0** | **3.0** | **5.0** | **12** | **227.9** |
+
+Measured on: macOS 27, **arm64 native**, JDK 21.0.12 (aarch64), single machine running both JMeter and
+the application, in-memory H2 database, application started with `scripts/start-app.sh`.
+
+### Why these are roughly ten times faster than the run below
+
+Not because anything in the application got faster. The earlier run executed on an x86_64 JDK under
+Rosetta 2 translation; this one runs natively on arm64. The machine lost Rosetta in a macOS upgrade
+and the toolchain was reinstalled native, so every JVM figure moved at once.
+
+**The two tables are therefore not comparable, and neither supersedes the other.** The older one is
+kept because it is the record of what was actually measured that day, and quietly replacing it would
+turn a documented measurement into a claim nobody can check. Compare a run only against another run on
+the same architecture.
+
+One consequence worth noting: the first-call outliers described below — a 435ms max on
+`01 Create customer` against a 64ms mean — have gone. At native speed JIT warm-up and Hibernate's
+first statement preparation no longer stand out above the noise. The effect has not disappeared; it
+has shrunk below the resolution of a five-second run.
+
+### The earlier run, for the record
+
+Run of 2026-09-11, 10 threads, 5s ramp-up, 20 loops — 630 samples, **0% errors**. **x86_64 under
+Rosetta 2 translation.**
 
 | Sampler | Samples | Error % | Mean (ms) | p90 | p95 | p99 | Max | Throughput/s |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -52,8 +96,8 @@ Run of 2026-09-11, 10 threads, 5s ramp-up, 20 loops — 630 samples, **0% errors
 | `03 Create invoice` | 10 | 0.00 | 20.5 | 44.9 | 46.0 | 46.0 | 46 | 2.3 |
 | **Total** | **630** | **0.00** | **14.0** | **31.0** | **39.0** | **62.7** | **435** | **138.6** |
 
-Measured on: macOS, x86_64, JDK 21, single machine running both JMeter and the application, in-memory
-H2 database, application started with `scripts/start-app.sh`.
+Measured on: macOS, x86_64 under Rosetta 2, JDK 21, single machine running both JMeter and the
+application, in-memory H2 database, application started with `scripts/start-app.sh`.
 
 ### Reading these numbers honestly
 
@@ -80,8 +124,9 @@ would make the table look better than the measurement was.
 
 ### What the plan is actually good for
 
-- Confirming the API holds up under concurrency without errors — 630 requests, 0 failures, including
-  200 concurrent payment writes with no lost updates or spurious rule rejections.
+- Confirming the API holds up under concurrency without errors — 1050 requests, 0 failures, including
+  200 concurrent payment writes with no lost updates or spurious rule rejections, and 400 concurrent
+  reads of schedules and ledgers.
 - Catching a regression in **relative** terms: if `20 Get invoice` goes from 11ms to 200ms after a
   change, that is a signal worth investigating regardless of absolute numbers.
 - Demonstrating a parameterised, re-runnable plan that could be pointed at a properly provisioned

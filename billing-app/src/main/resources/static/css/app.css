@@ -509,6 +509,43 @@ button:hover {
   color: var(--bad);
 }
 
+/* The agent console has no left nav: the grid is the navigation, and taking the width back for it
+   is what lets seven columns and a total sit on one screen. */
+.agent-console {
+  max-width: 76rem;
+  margin: 0 auto;
+}
+
+/* The total is the figure a reader checks the column against by hand, so it is ruled off from the
+   rows above it rather than left looking like one more line of the book. */
+[data-testid="portfolio-total-row"] td {
+  border-top: 2px solid var(--ink);
+  font-weight: 600;
+  background: var(--neutral);
+}
+
+/* The selected row stays visibly selected while the reader looks at the panels below it - otherwise
+   the detail on screen belongs to a row they have to go back and find again. */
+.table-scroll tr.current td {
+  background: var(--neutral);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* A caption a screen reader announces and a sighted reader does not need, the heading above the
+   table having already said it. Clipped rather than display:none, which would take it out of the
+   accessibility tree along with the layout. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 @media (max-width: 720px) {
   .workspace {
     flex-direction: column;

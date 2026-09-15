@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="#{agent.title}">Agent console</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="workspace-main agent-console">
+  <h1 data-testid="page-title" th:text="#{agent.title}">Agent console</h1>
+
+  <p th:if="${rows.isEmpty()}" data-testid="no-portfolio-message" th:text="#{agent.portfolio.empty}">
+    No terms are on the books.
+  </p>
+
+  <div th:unless="${rows.isEmpty()}" class="table-scroll">
+    <table data-testid="portfolio-table">
+      <caption class="visually-hidden" th:text="#{agent.portfolio.caption}">Portfolio</caption>
+      <thead>
+      <tr>
+        <th th:text="#{agent.column.policy}">Policy</th>
+        <th th:text="#{agent.column.insured}">Insured</th>
+        <th th:text="#{agent.column.product}">Product</th>
+        <th th:text="#{agent.column.status}">Term status</th>
+        <th th:text="#{agent.column.effective}">Effective</th>
+        <th th:text="#{agent.column.expiry}">Expiry</th>
+        <th class="numeric" th:text="#{agent.column.balance}">Balance</th>
+      </tr>
+      </thead>
+      <tbody>
+      <!--
+        The row is identified by its term reference, not its place in the table. A grid re-sorted by a
+        defect would still satisfy an assertion written against the third row.
+      -->
+      <tr th:each="row : ${rows}" data-testid="portfolio-row"
+          th:attr="data-term=${row.termReference}, data-account=${row.accountReference}"
+          th:classappend="${selectedTerm != null and row.termReference == selectedTerm.termReference} ? 'current' : ''">
+        <td>
+          <a data-testid="portfolio-policy-number"
+             th:href="@{/agent(term=${row.termReference}, tab=${activeTab})}"
+             th:text="${row.policyNumber}"></a>
+        </td>
+        <td data-testid="portfolio-insured" th:text="${row.insuredName}"></td>
+        <td data-testid="portfolio-product"
+            th:attr="data-product=${row.product}"
+            th:text="#{'policyType.' + ${row.product}}"></td>
+        <td>
+          <span class="status" data-testid="portfolio-status"
+                th:attr="data-status=${row.status}"
+                th:classappend="'term-' + ${row.status}"
+                th:text="#{'termStatus.' + ${row.status}}"></span>
+        </td>
+        <td data-testid="portfolio-effective-date"
+            th:attr="data-date=${row.effectiveDate}"
+            th:text="${@billingFormats.date(row.effectiveDate, #locale)}"></td>
+        <td data-testid="portfolio-expiry-date"
+            th:attr="data-date=${row.expiryDate}"
+            th:text="${@billingFormats.date(row.expiryDate, #locale)}"></td>
+        <td class="numeric" data-testid="portfolio-balance"
+            th:attr="data-amount=${row.balance}"
+            th:text="${@billingFormats.money(row.balance, #locale)}"></td>
+      </tr>
+      </tbody>
+      <tfoot>
+      <tr data-testid="portfolio-total-row">
+        <td colspan="6" th:text="#{common.total}">Total</td>
+        <td class="numeric emphasis" data-testid="portfolio-total"
+            th:attr="data-amount=${portfolioTotal}"
+            th:text="${@billingFormats.money(portfolioTotal, #locale)}"></td>
+      </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div th:if="${selectedTerm != null}">
+    <h2 data-testid="selected-term-heading"
+        th:text="#{agent.selected(${selectedTerm.policyNumber})}">Selected term</h2>
+
+    <div th:replace="~{fragments/term :: header(${selectedTerm})}"></div>
+    <div th:replace="~{fragments/term :: tabs(${tabBasePath}, ${selectedTerm}, ${activeTab})}"></div>
+    <th:block th:replace="~{fragments/term :: panels(${selectedTerm}, ${schedule}, ${ledger}, ${activeTab})}"></th:block>
+  </div>
+</main>
+</body>
+</html>
