@@ -69,6 +69,17 @@ public class Invoice {
   @OrderBy("receivedAt ASC")
   private List<Payment> payments = new ArrayList<>();
 
+  /**
+   * The scheduled installment this invoice bills, when it has one.
+   *
+   * <p>Null for an invoice raised directly against a policy rather than generated from a payment
+   * schedule. Both kinds coexist deliberately: an insurer raises one-off documents as well as
+   * scheduled ones, and every invoice that predates the schedule model is one of the former.
+   */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "installment_id")
+  private Installment installment;
+
   protected Invoice() {
     // required by JPA
   }
@@ -246,5 +257,15 @@ public class Invoice {
 
   public List<Payment> getPayments() {
     return Collections.unmodifiableList(payments);
+  }
+
+  /** The installment this invoice bills, or empty when it was raised directly against the policy. */
+  public java.util.Optional<Installment> getInstallment() {
+    return java.util.Optional.ofNullable(installment);
+  }
+
+  /** Records that this invoice bills the given scheduled installment. */
+  public void billsInstallment(Installment installment) {
+    this.installment = installment;
   }
 }
