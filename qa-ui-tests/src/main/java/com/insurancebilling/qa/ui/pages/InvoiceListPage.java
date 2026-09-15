@@ -40,11 +40,18 @@ public class InvoiceListPage extends BasePage {
     return rowFor(invoiceNumber).isPresent();
   }
 
+  /** The invoice's state, read from the row's data attribute rather than from its translated label. */
   public String statusOf(String invoiceNumber) {
-    return cellText(invoiceNumber, "invoice-status");
+    return cellAttribute(invoiceNumber, "invoice-status", "data-status");
   }
 
+  /** The balance as a plain decimal, not as the currency string the reader's language would write. */
   public String outstandingBalanceOf(String invoiceNumber) {
+    return cellAttribute(invoiceNumber, "invoice-balance", "data-amount");
+  }
+
+  /** The balance exactly as it is rendered, for the tests that are about the rendering. */
+  public String displayedBalanceOf(String invoiceNumber) {
     return cellText(invoiceNumber, "invoice-balance");
   }
 
@@ -84,14 +91,38 @@ public class InvoiceListPage extends BasePage {
     return isPresent("no-invoices-message");
   }
 
+  /** Every state on screen, as codes rather than as the words the reader's language uses for them. */
   public List<String> displayedStatuses() {
+    return driver.findElements(testId("invoice-status")).stream()
+        .map(element -> element.getDomAttribute("data-status"))
+        .toList();
+  }
+
+  /** Every state on screen exactly as it is written, for the tests that are about the words. */
+  public List<String> displayedStatusLabels() {
     return driver.findElements(testId("invoice-status")).stream()
         .map(element -> element.getText().trim())
         .toList();
   }
 
+  /** Switches the console to the given language and waits for the reloaded page. */
+  public InvoiceListPage switchLanguageTo(String language) {
+    markCurrentDocument();
+    click("lang-toggle-" + language);
+    waitForNewDocument();
+    return this;
+  }
+
+  public String pageHeading() {
+    return textOf("page-title");
+  }
+
   private String cellText(String invoiceNumber, String cellTestId) {
     return requireRow(invoiceNumber).findElement(testId(cellTestId)).getText().trim();
+  }
+
+  private String cellAttribute(String invoiceNumber, String cellTestId, String attribute) {
+    return requireRow(invoiceNumber).findElement(testId(cellTestId)).getDomAttribute(attribute);
   }
 
   private WebElement requireRow(String invoiceNumber) {

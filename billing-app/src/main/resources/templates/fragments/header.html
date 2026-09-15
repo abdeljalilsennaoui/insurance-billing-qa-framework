@@ -2,10 +2,27 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <header th:fragment="header" class="site-header">
-  <a class="brand" href="/invoices" data-testid="brand-link">Insurance Billing</a>
+  <a class="brand" th:href="@{/invoices}" data-testid="brand-link">
+    <span class="brand-name" th:text="#{app.name}">Meridian Assurance</span>
+    <span class="brand-tagline" th:text="#{app.tagline}">Billing and payments</span>
+  </a>
   <nav>
-    <a href="/invoices" data-testid="nav-invoices">Invoices</a>
+    <a th:href="@{/invoices}" data-testid="nav-invoices" th:text="#{nav.invoices}">Invoices</a>
   </nav>
+  <!--
+    The language switch keeps the reader where they are: it rebuilds the current path and query with
+    lang= replaced, rather than sending everyone back to the invoice list to change language.
+  -->
+  <div class="language-switch">
+    <a data-testid="lang-toggle-en"
+       th:classappend="${#locale.language == 'en'} ? 'current' : ''"
+       th:href="@{${currentPath} (lang='en')}"
+       th:text="#{nav.language.english}">English</a>
+    <a data-testid="lang-toggle-fr"
+       th:classappend="${#locale.language == 'fr'} ? 'current' : ''"
+       th:href="@{${currentPath} (lang='fr')}"
+       th:text="#{nav.language.french}">Français</a>
+  </div>
 </header>
 </body>
 </html>

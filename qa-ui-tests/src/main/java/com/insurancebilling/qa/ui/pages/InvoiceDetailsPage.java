@@ -21,19 +21,34 @@ public class InvoiceDetailsPage extends BasePage {
     return textOf("invoice-number");
   }
 
+  /**
+   * The invoice's state, read from its data attribute rather than from its translated label.
+   *
+   * <p>See {@link BasePage#attributeOf} for why. The same applies to every money figure below.
+   */
   public String status() {
+    return attributeOf("invoice-status", "data-status");
+  }
+
+  /** The status exactly as it is written on screen, for the tests that are about the words. */
+  public String displayedStatusLabel() {
     return textOf("invoice-status");
   }
 
   public String total() {
-    return textOf("invoice-total");
+    return attributeOf("invoice-total", "data-amount");
   }
 
   public String amountPaid() {
-    return textOf("invoice-amount-paid");
+    return attributeOf("invoice-amount-paid", "data-amount");
   }
 
   public String outstandingBalance() {
+    return attributeOf("invoice-outstanding-balance", "data-amount");
+  }
+
+  /** The balance exactly as it is rendered, currency symbol and all. */
+  public String displayedOutstandingBalance() {
     return textOf("invoice-outstanding-balance");
   }
 
@@ -51,7 +66,7 @@ public class InvoiceDetailsPage extends BasePage {
 
   public List<String> paymentAmounts() {
     return driver.findElements(testId("payment-amount")).stream()
-        .map(element -> element.getText().trim())
+        .map(element -> element.getDomAttribute("data-amount"))
         .toList();
   }
 
@@ -98,6 +113,24 @@ public class InvoiceDetailsPage extends BasePage {
 
   public InvoiceDetailsPage payWith(String amount) {
     return payWith(amount, "CARD", "UI-AUTO");
+  }
+
+  /** Switches the console to the given language and waits for the reloaded page. */
+  public InvoiceDetailsPage switchLanguageTo(String language) {
+    markCurrentDocument();
+    click("lang-toggle-" + language);
+    waitForNewDocument();
+    return waitUntilLoaded();
+  }
+
+  /** The label shown beside the outstanding figure, which is display copy and changes with language. */
+  public String outstandingLabel() {
+    return driver
+        .findElements(org.openqa.selenium.By.cssSelector(".summary dt"))
+        .stream()
+        .map(element -> element.getText().trim())
+        .reduce((first, last) -> last)
+        .orElseThrow(() -> new AssertionError("The summary has no labels at all"));
   }
 
   public boolean hasSuccessBanner() {

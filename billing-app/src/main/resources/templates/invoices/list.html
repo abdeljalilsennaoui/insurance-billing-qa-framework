@@ -1,42 +1,42 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Invoices</title>
+  <title th:text="#{invoices.title}">Invoices</title>
   <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
 
 <main>
-  <h1 data-testid="page-title">Invoices</h1>
+  <h1 data-testid="page-title" th:text="#{invoices.title}">Invoices</h1>
 
   <form method="get" th:action="@{/invoices}" class="filter-form">
-    <label for="status-filter">Filter by status</label>
+    <label for="status-filter" th:text="#{invoices.filter.label}">Filter by status</label>
     <select id="status-filter" name="status" data-testid="status-filter">
-      <option value="">All statuses</option>
+      <option value="" th:text="#{invoices.filter.all}">All statuses</option>
       <option th:each="s : ${statuses}"
               th:value="${s}"
-              th:text="${s}"
+              th:text="#{'status.' + ${s}}"
               th:selected="${s == selectedStatus}"></option>
     </select>
-    <button type="submit" data-testid="apply-filter-button">Apply</button>
+    <button type="submit" data-testid="apply-filter-button" th:text="#{invoices.filter.apply}">Apply</button>
   </form>
 
-  <p th:if="${invoices.isEmpty()}" data-testid="no-invoices-message">
+  <p th:if="${invoices.isEmpty()}" data-testid="no-invoices-message" th:text="#{invoices.empty}">
     No invoices match the current filter.
   </p>
 
   <table th:unless="${invoices.isEmpty()}" data-testid="invoice-table">
     <thead>
     <tr>
-      <th>Invoice</th>
-      <th>Customer</th>
-      <th>Policy</th>
-      <th class="numeric">Total</th>
-      <th class="numeric">Outstanding</th>
-      <th>Status</th>
+      <th th:text="#{invoices.column.invoice}">Invoice</th>
+      <th th:text="#{invoices.column.customer}">Customer</th>
+      <th th:text="#{invoices.column.policy}">Policy</th>
+      <th class="numeric" th:text="#{invoices.column.total}">Total</th>
+      <th class="numeric" th:text="#{invoices.column.outstanding}">Outstanding</th>
+      <th th:text="#{invoices.column.status}">Status</th>
       <th></th>
     </tr>
     </thead>
@@ -48,20 +48,28 @@
       <td data-testid="invoice-customer" th:text="${invoice.customerName}"></td>
       <td data-testid="invoice-policy" th:text="${invoice.policyNumber}"></td>
       <td class="numeric" data-testid="invoice-total"
-          th:text="${#numbers.formatDecimal(invoice.totalAmount, 1, 2)}"></td>
+          th:attr="data-amount=${invoice.totalAmount}"
+          th:text="${@billingFormats.money(invoice.totalAmount, #locale)}"></td>
       <td class="numeric" data-testid="invoice-balance"
-          th:text="${#numbers.formatDecimal(invoice.outstandingBalance, 1, 2)}"></td>
+          th:attr="data-amount=${invoice.outstandingBalance}"
+          th:text="${@billingFormats.money(invoice.outstandingBalance, #locale)}"></td>
       <td>
+        <!--
+          The visible text is translated; the raw status rides on data-status. Automation reads the
+          attribute, so a suite asserting on state is not asserting on display copy - which stopped
+          being the same thing the moment this console gained a second language.
+        -->
         <span class="status" data-testid="invoice-status"
+              th:attr="data-status=${invoice.status}"
               th:classappend="'status-' + ${invoice.status}"
-              th:text="${invoice.status}"></span>
-        <span th:if="${invoice.overdue}" class="overdue-flag" data-testid="invoice-overdue-flag">
-          overdue
-        </span>
+              th:text="#{'status.' + ${invoice.status}}"></span>
+        <span th:if="${invoice.overdue}" class="overdue-flag" data-testid="invoice-overdue-flag"
+              th:text="#{invoices.overdue}">overdue</span>
       </td>
       <td>
         <a data-testid="invoice-link"
-           th:href="@{/invoices/{id}(id=${invoice.id})}">View</a>
+           th:href="@{/invoices/{id}(id=${invoice.id})}"
+           th:text="#{common.view}">View</a>
       </td>
     </tr>
     </tbody>

@@ -138,14 +138,18 @@ class InvoiceConsoleWebTest {
   }
 
   @Test
-  @DisplayName("a zero amount is refused by the billing rule and shown on the page")
+  @DisplayName("a zero amount is refused by the billing rule and explained to the reader")
   void zeroAmountShowsRuleMessage() throws Exception {
     long invoiceId = api.createInvoice("100.00");
 
+    // The console explains the refusal in the reader's words, not the domain's. The domain message
+    // ("Payment amount must be greater than zero but was 0.00") still reaches the API, where the
+    // audience is an engineer reading a response body rather than a policyholder reading a page.
     mockMvc
         .perform(post("/invoices/{id}/payments", invoiceId).param("amount", "0.00").param("method", "CARD"))
         .andExpect(status().isOk())
-        .andExpect(content().string(org.hamcrest.Matchers.containsString("must be greater than zero")));
+        .andExpect(
+            content().string(org.hamcrest.Matchers.containsString("Enter an amount greater than zero.")));
   }
 
   @Test

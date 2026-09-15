@@ -77,7 +77,10 @@ public class InvoicePaymentUiIT extends BaseUiTest {
     InvoiceDetailsPage page = new InvoiceDetailsPage().openById(invoice.id()).payWith("0.00");
 
     assertThat(page.hasErrorBanner()).isTrue();
-    assertThat(page.errorMessage()).contains("must be greater than zero");
+    // The console explains the refusal in the reader's words. The domain's own sentence ("Payment
+    // amount must be greater than zero but was 0.00") still reaches the API, whose reader is an
+    // engineer rather than a policyholder.
+    assertThat(page.errorMessage()).contains("Enter an amount greater than zero");
     assertThat(page.outstandingBalance()).isEqualTo("100.00");
   }
 
@@ -131,7 +134,9 @@ public class InvoicePaymentUiIT extends BaseUiTest {
     InvoiceDetailsPage page = new InvoiceDetailsPage().openById(invoice.id()).payWith("10.00");
 
     assertThat(page.hasErrorBanner()).isTrue();
-    assertThat(page.errorMessage()).contains("LAPSED");
+    // Not "LAPSED": a policyholder is told what it means for them, not which constant the platform
+    // holds. The API still reports POLICY_NOT_ACTIVE, and PaymentValidationApiIT asserts that.
+    assertThat(page.errorMessage()).contains("no longer active");
   }
 
   @Test(groups = "ui-regression")

@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8">
-  <title>Not found</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="#{invoice.notFound.title}">Invoice not found</title>
   <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
 <main>
-  <h1 data-testid="page-title">Not found</h1>
-  <p class="banner error" data-testid="not-found-message" th:text="${message}"></p>
-  <a th:href="@{/invoices}" data-testid="back-to-list-link">Back to invoices</a>
+  <h1 data-testid="page-title" th:text="#{invoice.notFound.title}">Invoice not found</h1>
+  <p class="banner error" data-testid="not-found-message" th:text="#{invoice.notFound.message}">
+    No invoice exists with that reference.
+  </p>
+  <a th:href="@{/invoices}" data-testid="back-to-list-link" th:text="#{invoice.back}">Back to invoices</a>
 </main>
 </body>
 </html>

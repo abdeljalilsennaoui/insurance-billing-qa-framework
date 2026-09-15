@@ -24,6 +24,14 @@ spring:
   thymeleaf:
     cache: false
 
+  # The console is published in English and French. UTF-8 is explicit because the French bundle carries
+  # accented characters and a bundle read as ISO-8859-1 renders them as mojibake rather than failing,
+  # which is the kind of defect that survives a whole release.
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
 server:
   port: 8080
   servlet:

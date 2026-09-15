@@ -13,10 +13,12 @@
   --line: #d8dee9;
   --surface: #ffffff;
   --page: #f4f6f9;
-  --accent: #14487a;
+  --accent: #10505a;
+  --accent-dark: #0a3a42;
   --good: #1f7a4d;
   --bad: #a32020;
   --warn: #8a5a00;
+  --neutral: #e7ebf1;
 }
 
 * {
@@ -37,6 +39,38 @@ body {
   padding: 0.9rem 1.5rem;
   background: var(--accent);
   color: #fff;
+}
+
+.brand-name {
+  display: block;
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.brand-tagline {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* Pushed to the far end of the header, so the language choice is where a reader looks for it. */
+.language-switch {
+  margin-left: auto;
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.language-switch a {
+  opacity: 0.75;
+}
+
+.language-switch a.current {
+  opacity: 1;
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .site-header a {
@@ -111,6 +145,11 @@ tbody tr:last-child td {
   font-size: 0.8rem;
   font-weight: 600;
   background: #e7ebf1;
+  color: var(--muted);
+}
+
+.status-UNPAID {
+  background: var(--neutral);
   color: var(--muted);
 }
 
@@ -221,5 +260,5 @@ button {
 }
 
 button:hover {
-  background: #0f3860;
+  background: var(--accent-dark);
 }

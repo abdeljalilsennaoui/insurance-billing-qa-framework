@@ -34,6 +34,39 @@ public class InvoiceConsoleUiSteps {
     listPage = new InvoiceListPage().open();
   }
 
+  /**
+   * Opens the console in a named language.
+   *
+   * <p>The feature file says "English" and "French" rather than "en" and "fr" because a feature file is
+   * written in the language of the business, not of the implementation. Mapping one to the other is this
+   * layer's job.
+   */
+  @Given("the billing console is open in {string}")
+  public void theBillingConsoleIsOpenIn(String language) {
+    listPage = new InvoiceListPage().open().switchLanguageTo(codeFor(language));
+  }
+
+  @When("I switch the console to {string}")
+  public void iSwitchTheConsoleTo(String language) {
+    detailsPage = detailsPage.switchLanguageTo(codeFor(language));
+  }
+
+  @Then("the balance is written as {string}")
+  public void theBalanceIsWrittenAs(String expected) {
+    assertThat(detailsPage.displayedOutstandingBalance())
+        .as("the balance as the reader's language writes it")
+        .isEqualTo(expected);
+  }
+
+  private static String codeFor(String language) {
+    return switch (language) {
+      case "English" -> "en";
+      case "French" -> "fr";
+      default -> throw new IllegalArgumentException(
+          "The console is not published in " + language);
+    };
+  }
+
   @When("I open that invoice in the console")
   public void iOpenThatInvoiceInTheConsole() {
     detailsPage = new InvoiceDetailsPage().openById(context.invoice().id());
@@ -47,6 +80,21 @@ public class InvoiceConsoleUiSteps {
   @When("I look for that invoice in the list")
   public void iLookForThatInvoiceInTheList() {
     listPage = new InvoiceListPage().open();
+  }
+
+  /**
+   * Asserts that the payment was refused, without naming the words used to refuse it.
+   *
+   * <p>Deliberately not asserting the sentence: this step runs in both languages, and the sentence is
+   * different in each. What is the same in both is that the payment did not go through and the reader
+   * was told why. {@code BilingualConsoleUiIT} covers the wording itself.
+   */
+  @Then("the console refuses the payment with an explanation")
+  public void theConsoleRefusesThePaymentWithAnExplanation() {
+    assertThat(detailsPage.hasErrorBanner())
+        .as("expected a refusal to be explained, but the console showed: %s", currentBannerText())
+        .isTrue();
+    assertThat(detailsPage.errorMessage()).as("a refusal with no explanation is not an explanation").isNotBlank();
   }
 
   @Then("the console confirms the payment")
