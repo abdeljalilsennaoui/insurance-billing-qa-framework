@@ -50,6 +50,11 @@ management:
 billing:
   time-zone: America/Toronto
 
+  # What a returned payment costs the policyholder. Configuration rather than a constant because it is
+  # a commercial figure that changes without the billing rules changing, and because a test that wants
+  # to prove the fee is applied should not have to know what it is.
+  nsf-fee: 25.00
+
 # QA support endpoints (database reset) are disabled unless explicitly switched on.
 # CI and local automation runs enable them with --qa.test-support.enabled=true so that a
 # production-shaped deployment can never expose them by accident.

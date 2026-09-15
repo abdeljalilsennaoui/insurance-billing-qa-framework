@@ -1,15 +1,26 @@
 package com.insurancebilling.config;
 
+import com.insurancebilling.domain.BankAccountReference;
+import com.insurancebilling.domain.BillingAccount;
+import com.insurancebilling.domain.BillingTransaction;
 import com.insurancebilling.domain.Customer;
+import com.insurancebilling.domain.Installment;
 import com.insurancebilling.domain.Invoice;
 import com.insurancebilling.domain.PaymentMethod;
+import com.insurancebilling.domain.PaymentPlan;
 import com.insurancebilling.domain.Policy;
 import com.insurancebilling.domain.PolicyStatus;
+import com.insurancebilling.domain.PolicyTerm;
 import com.insurancebilling.domain.PolicyType;
+import com.insurancebilling.domain.ReturnReason;
+import com.insurancebilling.repository.BillingAccountRepository;
 import com.insurancebilling.repository.CustomerRepository;
+import com.insurancebilling.repository.InvoiceRepository;
+import com.insurancebilling.service.InstallmentScheduleGenerator;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -75,10 +86,21 @@ public class SeedDataLoader {
   public static class SeedDataWriter {
 
     private final CustomerRepository customers;
+    private final BillingAccountRepository accounts;
+    private final InvoiceRepository invoices;
+    private final InstallmentScheduleGenerator scheduleGenerator;
     private final Clock clock;
 
-    public SeedDataWriter(CustomerRepository customers, Clock clock) {
+    public SeedDataWriter(
+        CustomerRepository customers,
+        BillingAccountRepository accounts,
+        InvoiceRepository invoices,
+        InstallmentScheduleGenerator scheduleGenerator,
+        Clock clock) {
       this.customers = customers;
+      this.accounts = accounts;
+      this.invoices = invoices;
+      this.scheduleGenerator = scheduleGenerator;
       this.clock = clock;
     }
 
@@ -146,6 +168,177 @@ public class SeedDataLoader {
 
       // Policies and invoices are reachable from the customer and cascade on save.
       customers.saveAll(java.util.List.of(alice, bruno, chantal));
+
+      seedBilledAccounts(today);
+    }
+
+    /**
+     * Seeds the two accounts billed on a payment schedule.
+     *
+     * <p>Two, not one, and the figures are chosen rather than arbitrary. The first term's premium and
+     * tax divide evenly across twelve; the second's do not, so its schedule carries the rounding
+     * remainder on its down payment and is the fixture that would notice if that ever changed. The
+     * second account also carries a returned payment, which is the only way the NSF counters, the
+     * reversing ledger line and a reversed installment are visible without a test creating them.
+     *
+     * <p>Saved after the customers rather than with them: a term's installments have to exist before an
+     * invoice can reference one.
+     */
+    private void seedBilledAccounts(LocalDate today) {
+      Customer dominique = new Customer("Dominique", "Fortin", "dominique.fortin@example.com");
+      Policy evenPolicy =
+          seedPolicy("SEED-POL-005", PolicyType.AUTO, "1440.00", today.minusMonths(2));
+      dominique.addPolicy(evenPolicy);
+
+      // An accented name on purpose: it makes every hop - JSON, Thymeleaf, JPA and SOAP - prove it
+      // round-trips UTF-8 rather than merely claiming to.
+      Customer elise = new Customer("Élise", "Marchand", "elise.marchand@example.com");
+      Policy unevenPolicy =
+          seedPolicy("SEED-POL-006", PolicyType.HOME, "1000.00", today.minusMonths(1));
+      elise.addPolicy(unevenPolicy);
+
+      customers.saveAll(List.of(dominique, elise));
+
+      // 1440.00 over twelve is 120.00 exactly, and 129.60 of tax is 10.80 exactly: a down payment of
+      // 130.80 then eleven of 132.80, totalling 1591.60.
+      BillingAccount evenAccount =
+          seedAccount("ACCT-100001", "Dominique Fortin", "204", PaymentPlan.MONTHLY);
+      PolicyTerm evenTerm =
+          seedTerm(
+              evenAccount,
+              evenPolicy,
+              "SEED-TERM-001",
+              "SEED-INS-001",
+              "1440.00",
+              "129.60",
+              "2.00",
+              today.minusMonths(2));
+      evenTerm.postNewBusiness(
+          "SEED-TXN-001", "New business", today.minusMonths(2), clock.instant());
+      payInstallment(evenTerm, "SEED-TXN-002", today.minusMonths(2));
+      payInstallment(evenTerm, "SEED-TXN-003", today.minusMonths(1));
+
+      // 1000.00 over twelve is 83.3333: the down payment absorbs the four cents and pays 83.37, so the
+      // schedule is 90.87 then eleven of 92.83, totalling 1112.00.
+      BillingAccount unevenAccount =
+          seedAccount("ACCT-100002", "Élise Marchand", "871", PaymentPlan.MONTHLY);
+      PolicyTerm unevenTerm =
+          seedTerm(
+              unevenAccount,
+              unevenPolicy,
+              "SEED-TERM-002",
+              "SEED-INS-002",
+              "1000.00",
+              "90.00",
+              "2.00",
+              today.minusMonths(1));
+      unevenTerm.postNewBusiness(
+          "SEED-TXN-101", "New business", today.minusMonths(1), clock.instant());
+      BillingTransaction returnedPayment =
+          payInstallment(unevenTerm, "SEED-TXN-102", today.minusMonths(1));
+      unevenTerm.returnPayment(
+          "SEED-TXN-103",
+          "SEED-TXN-104",
+          returnedPayment,
+          ReturnReason.INSUFFICIENT_FUNDS,
+          new BigDecimal("25.00"),
+          today.minusDays(20),
+          clock.instant());
+
+      accounts.saveAll(List.of(evenAccount, unevenAccount));
+
+      seedInstallmentInvoices(evenTerm, today);
+    }
+
+    /** An account collected by pre-authorised debit, holding only the last three account digits. */
+    private BillingAccount seedAccount(
+        String reference, String accountHolder, String lastDigits, PaymentPlan plan) {
+      BillingAccount account =
+          new BillingAccount(reference, plan, PaymentMethod.PRE_AUTHORIZED_DEBIT);
+      account.setBankAccount(BankAccountReference.of(accountHolder, lastDigits));
+      return account;
+    }
+
+    /** A term with its schedule generated but not yet bound. */
+    private PolicyTerm seedTerm(
+        BillingAccount account,
+        Policy policy,
+        String termReference,
+        String installmentPrefix,
+        String premium,
+        String tax,
+        String fee,
+        LocalDate effective) {
+      PolicyTerm term =
+          new PolicyTerm(
+              termReference,
+              1,
+              effective,
+              effective.plusYears(1),
+              PaymentPlan.MONTHLY,
+              new BigDecimal(premium),
+              new BigDecimal(tax),
+              new BigDecimal(fee));
+      policy.attachTerm(term);
+      account.addTerm(term);
+      account.setCustomer(policy.getCustomer());
+
+      List<Installment> schedule =
+          scheduleGenerator.generate(
+              installmentPrefix,
+              PaymentPlan.MONTHLY,
+              new BigDecimal(premium),
+              new BigDecimal(tax),
+              new BigDecimal(fee),
+              effective);
+      schedule.forEach(term::addInstallment);
+      return term;
+    }
+
+    /** Pays exactly what the next unsettled installment asks for. */
+    private BillingTransaction payInstallment(
+        PolicyTerm term, String reference, LocalDate effective) {
+      BigDecimal due =
+          term.nextUnpaidInstallment()
+              .orElseThrow(() -> new IllegalStateException("Seeded schedule has nothing left to pay"))
+              .getAmountDue();
+      return term.recordPayment(
+          reference, due, "Payment - pre-authorised debit", effective, clock.instant());
+    }
+
+    /**
+     * Raises the invoice each already-billed installment produced.
+     *
+     * <p>This is what joins the two halves of the domain: a scheduled installment is what raises the
+     * billing document, and the document is what the invoice console has always listed. Only
+     * installments that have actually been drawn get one — a schedule twelve months long does not put
+     * twelve invoices in front of a policyholder on day one.
+     */
+    private void seedInstallmentInvoices(PolicyTerm term, LocalDate today) {
+      term.ageScheduleAsOf(today);
+      int sequence = 1;
+      for (Installment installment : term.getInstallments()) {
+        if (installment.getScheduledDate().isAfter(today)) {
+          break;
+        }
+        Invoice invoice =
+            new Invoice(
+                "SEED-INS-INV-%03d".formatted(sequence++),
+                installment.getAmountDue(),
+                installment.getScheduledDate(),
+                installment.getDueDate());
+        term.getPolicy().addInvoice(invoice);
+        invoice.billsInstallment(installment);
+        if (installment.getStatus() == com.insurancebilling.domain.InstallmentStatus.PAID) {
+          invoice.applyPayment(
+              installment.getAmountDue(),
+              PaymentMethod.PRE_AUTHORIZED_DEBIT,
+              "SEED-PAD-%03d".formatted(sequence - 1),
+              clock.instant());
+        }
+        invoice.markOverdueIfDue(today);
+        invoices.save(invoice);
+      }
     }
 
     /** A one-year policy term starting on the given date. */

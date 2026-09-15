@@ -1,11 +1,14 @@
 package com.insurancebilling.qa.api.data;
 
+import com.insurancebilling.qa.api.client.BillingApiClient;
 import com.insurancebilling.qa.api.client.CustomerApiClient;
 import com.insurancebilling.qa.api.client.InvoiceApiClient;
 import com.insurancebilling.qa.api.client.PolicyApiClient;
+import com.insurancebilling.qa.api.model.BillingAccountDto;
 import com.insurancebilling.qa.api.model.CustomerDto;
 import com.insurancebilling.qa.api.model.InvoiceDto;
 import com.insurancebilling.qa.api.model.PolicyDto;
+import com.insurancebilling.qa.api.model.PolicyTermDto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -30,6 +33,10 @@ public class BillingTestData {
   private final CustomerApiClient customers = new CustomerApiClient();
   private final PolicyApiClient policies = new PolicyApiClient();
   private final InvoiceApiClient invoices = new InvoiceApiClient();
+  private final BillingApiClient billing = new BillingApiClient();
+
+  /** The date every fixture term takes effect: far enough back that its first installments are billed. */
+  private static final int TERM_STARTED_MONTHS_AGO = 2;
 
   /** A new customer with a guaranteed-unique email. */
   public CustomerDto customer() {
@@ -92,5 +99,51 @@ public class BillingTestData {
 
   public InvoiceDto invoiceOn(long policyId, String totalAmount, LocalDate dueDate) {
     return invoices.create(policyId, new BigDecimal(totalAmount), LocalDate.now(), dueDate);
+  }
+
+  /** A new billing account, collected by pre-authorised debit, for a new customer. */
+  public BillingAccountDto account() {
+    return billing.openAccount(customer().id(), "QA Tester", "742");
+  }
+
+  /**
+   * A bound term whose premium and tax divide evenly across twelve.
+   *
+   * <p>1440.00 and 129.60 give a down payment of 130.80 then eleven of 132.80, totalling 1591.60.
+   */
+  public PolicyTermDto evenTerm(String accountReference) {
+    return termOn(accountReference, "1440.00", "129.60");
+  }
+
+  /**
+   * A bound term whose premium does not divide evenly across twelve.
+   *
+   * <p>1000.00 over twelve is 83.3333, so the down payment absorbs four cents: 90.87 then eleven of
+   * 92.83, totalling 1112.00. This is the fixture for anything about rounding.
+   */
+  public PolicyTermDto unevenTerm(String accountReference) {
+    return termOn(accountReference, "1000.00", "90.00");
+  }
+
+  /**
+   * A term bound to the given account on a new policy, with a 2.00 installment fee.
+   *
+   * <p>The policy is raised for the account's own customer rather than a fresh one, so the insured named
+   * on the term is the person the account belongs to. A fixture that got that wrong would still pass
+   * every arithmetic assertion and quietly make the screens nonsense.
+   */
+  public PolicyTermDto termOn(String accountReference, String premium, String tax) {
+    LocalDate effective = LocalDate.now().minusMonths(TERM_STARTED_MONTHS_AGO);
+    long customerId = billing.account(accountReference).customerId();
+    PolicyDto policy =
+        policies.create(
+            customerId, "AUTO", new BigDecimal(premium), effective, effective.plusYears(1));
+    return billing.bindTerm(
+        accountReference, policy.id(), effective.toString(), premium, tax, "2.00");
+  }
+
+  /** An account with one bound term on it, which is what most billing scenarios start from. */
+  public PolicyTermDto boundTerm() {
+    return evenTerm(account().accountReference());
   }
 }

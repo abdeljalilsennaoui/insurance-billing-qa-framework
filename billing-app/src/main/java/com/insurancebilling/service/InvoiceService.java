@@ -66,15 +66,37 @@ public class InvoiceService {
   }
 
   /**
-   * Applies a payment to an invoice.
+   * Applies a payment to an invoice, and to the ledger behind it when there is one.
+   *
+   * <p>An invoice raised from a payment schedule is a billing document for money the term already owes.
+   * Recording a payment against it therefore has to reach the ledger, or the invoice would show settled
+   * while the term still showed the balance. The invoice's own rules run first and unchanged: if they
+   * refuse the payment, nothing reaches the ledger.
+   *
+   * <p>The ledger applies the money to the oldest unsettled installment, which need not be the one this
+   * invoice bills. That is deliberate and is the ordinary rule for money against a debt — paying the
+   * document for installment three while one and two are open settles one and two.
    *
    * @throws ResourceNotFoundException if the invoice does not exist
    * @throws com.insurancebilling.domain.PaymentRejectedException if a billing rule refuses the payment
    */
   public Payment pay(Long invoiceId, PaymentRequest request) {
     Invoice invoice = findById(invoiceId);
-    return invoice.applyPayment(
-        request.amount(), request.method(), request.reference(), clock.instant());
+    Payment payment =
+        invoice.applyPayment(
+            request.amount(), request.method(), request.reference(), clock.instant());
+    invoice
+        .getInstallment()
+        .map(installment -> installment.getPolicyTerm())
+        .ifPresent(
+            term ->
+                term.recordPayment(
+                    references.transactionReference(),
+                    payment.getAmount(),
+                    "Payment - " + request.method(),
+                    LocalDate.now(clock),
+                    payment.getReceivedAt()));
+    return payment;
   }
 
   @Transactional(readOnly = true)
