@@ -153,6 +153,33 @@ class LocalisedConsoleWebTest {
   }
 
   @Test
+  @DisplayName("every console page offers a language switch that points back at itself")
+  void everyConsolePageOffersAWorkingLanguageSwitch() throws Exception {
+    // The switch is built from a model attribute supplied by a @ControllerAdvice scoped to named
+    // controller types. A screen whose controller is not on that list still renders the switch, with
+    // nowhere to go - no exception, no blank page, just a dead link for half the readers. That is how
+    // the agent console shipped its first draft, so the list of pages is checked rather than the list
+    // of controllers.
+    for (String path :
+        new String[] {
+          "/invoices",
+          "/invoices/1",
+          "/invoices?status=OVERDUE",
+          "/accounts/ACCT-100001",
+          "/accounts/ACCT-100001/terms",
+          "/accounts/ACCT-100001/terms?tab=schedule",
+          "/agent",
+          "/agent?tab=transactions"
+        }) {
+      String expected = path.contains("?") ? path + "&amp;lang=fr" : path + "?lang=fr";
+
+      Assertions.assertThat(render(path))
+          .as("%s renders a language switch with no destination", path)
+          .contains("href=\"" + expected + "\"");
+    }
+  }
+
+  @Test
   @DisplayName("the response is served as UTF-8, so accented French reaches the browser intact")
   void theResponseIsServedAsUtf8() throws Exception {
     mockMvc

@@ -62,6 +62,8 @@ public class BillingAccountWebController {
         BillingAccountResponse.from(billing.findAccount(accountReference));
     model.addAttribute("account", account);
     model.addAttribute("activeNav", "terms");
+    // The shared term fragment builds its own tab links, so it has to be told which screen it is on.
+    model.addAttribute("tabBasePath", "/accounts/" + accountReference + "/terms");
 
     if (account.terms().isEmpty()) {
       model.addAttribute("selectedTerm", null);
