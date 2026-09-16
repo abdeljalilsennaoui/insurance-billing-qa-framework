@@ -1,0 +1,25 @@
+{
+  "question": "Why is my balance 1,328.00?",
+  "locale": "en-CA",
+  "accountReference": "ACCT-100001",
+  "toolCalls": [
+    {
+      "tool": "find_account",
+      "argument": "ACCT-100001"
+    },
+    {
+      "tool": "get_ledger",
+      "argument": "SEED-TERM-001"
+    }
+  ],
+  "answer": "Your term was charged in full when it was bound: 1591.60, made up of 1440.00 premium, 129.60 tax and the installment fees. Two payments have been received against it since - 130.80 on 2026-07-16 and 132.80 on 2026-08-16 - which leaves the balance of 1328.00 you can see on the account.",
+  "usage": {
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "cacheReadTokens": 0,
+    "latencyMillis": 0
+  },
+  "source": "HAND_WRITTEN",
+  "model": null,
+  "recordedAt": null
+}

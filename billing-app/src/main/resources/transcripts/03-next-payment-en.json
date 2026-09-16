@@ -1,0 +1,13 @@
+{
+  "question": "When is my next payment due and how much is it?",
+  "locale": "en-CA",
+  "accountReference": "ACCT-100001",
+  "toolCalls": [
+    { "tool": "find_account", "argument": "ACCT-100001" }
+  ],
+  "answer": "Your next payment is 132.80, due on 2026-10-01. It is collected by pre-authorised debit from the account ending 204, so you do not need to do anything. Ten instalments remain on the term after this one has been paid.",
+  "usage": { "inputTokens": 0, "outputTokens": 0, "cacheReadTokens": 0, "latencyMillis": 0 },
+  "source": "HAND_WRITTEN",
+  "model": null,
+  "recordedAt": null
+}

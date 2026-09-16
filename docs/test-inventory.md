@@ -10,13 +10,13 @@ used to be typed in several places and drifted apart from the suite and from eac
 
 | Layer | Count |
 |---|---:|
-| Application — domain and service unit | 151 |
-| Application — Spring integration | 116 |
+| Application — domain and service unit | 175 |
+| Application — Spring integration | 112 |
 | API (REST Assured) | 108 |
 | UI (Selenium) | 60 |
 | BDD scenarios (Cucumber) | 43 |
 | Smoke (Cypress) | 12 |
-| **Total** | **490** |
+| **Total** | **510** |
 
 ## By class
 
@@ -24,6 +24,8 @@ used to be typed in several places and drifted apart from the suite and from eac
 
 | Class | Tests | Result |
 |---|---:|:---:|
+| `BillingFormatsTest` | 10 | pass |
+| `ReplayBillingAssistantTest` | 14 | pass |
 | `MessageBundleParityTest` | 7 | pass |
 | `BankAccountReferenceTest` | 17 | pass |
 | `BillingAccountTest` | 8 | pass |
@@ -34,7 +36,7 @@ used to be typed in several places and drifted apart from the suite and from eac
 | `PolicyTermLedgerTest` | 22 | pass |
 | `ReturnedPaymentTest` | 15 | pass |
 | `InstallmentScheduleGeneratorTest` | 21 | pass |
-| **Subtotal** | **151** |  |
+| **Subtotal** | **175** |  |
 
 ### Application — Spring integration
 
@@ -42,7 +44,6 @@ used to be typed in several places and drifted apart from the suite and from eac
 |---|---:|:---:|
 | `AgentConsoleWebTest` | 16 | pass |
 | `BillingAccountApiIntegrationTest` | 14 | pass |
-| `BillingFormatsTest` | 10 | pass |
 | `CustomerPolicyApiIntegrationTest` | 12 | pass |
 | `InstallmentInvoiceLedgerIntegrationTest` | 5 | pass |
 | `InvoiceConsoleWebTest` | 11 | pass |
@@ -50,7 +51,8 @@ used to be typed in several places and drifted apart from the suite and from eac
 | `InvoicePaymentApiIntegrationTest` | 16 | pass |
 | `LocalisedConsoleWebTest` | 13 | pass |
 | `BillingReadToolsTest` | 13 | pass |
-| **Subtotal** | **116** |  |
+| `ShippedTranscriptsTest` | 6 | pass |
+| **Subtotal** | **112** |  |
 
 ### API (REST Assured)
 

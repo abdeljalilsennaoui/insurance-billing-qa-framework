@@ -63,6 +63,21 @@ billing:
   # to prove the fee is applied should not have to know what it is.
   nsf-fee: 25.00
 
+  assistant:
+    # Which billing assistant answers questions on the console:
+    #
+    #   replay    - answers from the recorded exchanges in src/main/resources/transcripts
+    #   disabled  - answers nothing, and the console renders the panel as unavailable
+    #
+    # replay is the default so that cloning this repository and running it produces a working
+    # assistant with no API key, no network and no cost, and so that every suite exercising it gets
+    # the same answer every time. The provider is shown on screen beside the answer: a recorded
+    # exchange presented as though a model had just produced it would be the application
+    # misrepresenting itself.
+    #
+    # An unrecognised value fails startup naming the accepted ones, the same bargain time-zone makes.
+    provider: replay
+
 # QA support endpoints (database reset) are disabled unless explicitly switched on.
 # CI and local automation runs enable them with --qa.test-support.enabled=true so that a
 # production-shaped deployment can never expose them by accident.

@@ -21,16 +21,30 @@ from collections import defaultdict
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Packages under billing-app whose tests boot a Spring context. Everything else in the module runs as
-# plain Java with no context at all, and the documentation quotes the two halves separately.
-#
-# This is a list rather than the single `api` it started as because the split is by kind of test, and
-# the package is only a proxy for it. The XML these counts are read from carries a class name and
-# nothing else, so there is no way to ask a report whether its tests booted a context - which means a
-# new package of Spring tests has to be added here, exactly as a new console page has to be added to
-# WebPageModelAdvice. Both are the same shape of trap and neither fails loudly; what fails is the
-# figure, quietly, in a document whose whole purpose is to be accurate.
-SPRING_CONTEXT_PACKAGES = {"api", "assistant"}
+
+def boots_a_spring_context(class_name):
+    """True when this test class starts an application context.
+
+    The documentation quotes billing-app's two halves separately - domain and service classes that run
+    as plain Java, and the tests that boot a context - so the count has to know which is which. This
+    used to be decided by package, `api` meaning Spring and everything else meaning plain, which was
+    only ever a proxy: it put BillingFormatsTest, a plain unit test, in the integration column, and it
+    would have put every plain test in a new package there too the moment the package was added to the
+    list. A proxy that needs a list maintained by hand is the same trap as WebPageModelAdvice, and it
+    fails the same way - silently, in a figure.
+
+    The report XML carries a class name and nothing else, so the annotation is read from the source.
+    That is available wherever this runs: CI checks the repository out before regenerating the counts.
+    A class whose source cannot be found is reported as plain rather than guessed at, and the figure it
+    lands in is the larger of the two, so the failure is visible in the total rather than hidden.
+    """
+    relative = class_name.replace(".", os.sep) + ".java"
+    path = os.path.join(REPO, "billing-app", "src", "test", "java", relative)
+    if not os.path.exists(path):
+        return False
+    with open(path, encoding="utf-8") as handle:
+        return "@SpringBootTest" in handle.read()
+
 
 # Module -> the layer it is reported as. Ordered as a reader would read them: inside out.
 LAYERS = [
@@ -38,13 +52,13 @@ LAYERS = [
         "billing-app",
         "surefire-reports",
         "Application — domain and service unit",
-        lambda pkg: pkg not in SPRING_CONTEXT_PACKAGES,
+        lambda name: not boots_a_spring_context(name),
     ),
     (
         "billing-app",
         "surefire-reports",
         "Application — Spring integration",
-        lambda pkg: pkg in SPRING_CONTEXT_PACKAGES,
+        boots_a_spring_context,
     ),
     ("qa-api-tests", "failsafe-reports", "API (REST Assured)", None),
     ("qa-ui-tests", "failsafe-reports", "UI (Selenium)", None),
@@ -54,7 +68,7 @@ LAYERS = [
 def read_java_suites():
     """Per-class test counts, keyed by layer."""
     results = {}
-    for module, reports, label, package_filter in LAYERS:
+    for module, reports, label, class_filter in LAYERS:
         pattern = os.path.join(REPO, module, "target", reports, "TEST-*.xml")
         classes = {}
         for path in sorted(glob.glob(pattern)):
@@ -64,11 +78,8 @@ def read_java_suites():
             # JSON instead, so the runner classes are skipped here to avoid counting them twice.
             if name.endswith("ScenariosIT"):
                 continue
-            if package_filter is not None:
-                parts = name.split(".")
-                package = parts[2] if len(parts) > 3 else ""
-                if not package_filter(package):
-                    continue
+            if class_filter is not None and not class_filter(name):
+                continue
             classes[name] = {
                 "tests": int(root.get("tests", 0)),
                 "failures": int(root.get("failures", 0)),
