@@ -1,0 +1,14 @@
+{
+  "question": "Why is my first instalment smaller than the others?",
+  "locale": "en-CA",
+  "accountReference": "ACCT-100001",
+  "toolCalls": [
+    { "tool": "find_term", "argument": "SEED-TERM-001" },
+    { "tool": "get_installment_schedule", "argument": "SEED-TERM-001" }
+  ],
+  "answer": "The first instalment is 130.80 and the remaining eleven are 132.80 each. The difference is the installment fee of 2.00, which is charged on every instalment after the first. The premium and tax are split evenly across all twelve at 130.80 each; adding the fee to eleven of them brings the schedule to 1591.60.",
+  "usage": { "inputTokens": 0, "outputTokens": 0, "cacheReadTokens": 0, "latencyMillis": 0 },
+  "source": "HAND_WRITTEN",
+  "model": null,
+  "recordedAt": null
+}

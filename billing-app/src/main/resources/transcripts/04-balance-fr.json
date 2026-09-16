@@ -1,0 +1,25 @@
+{
+  "question": "Pourquoi mon solde est-il de 1 328,00 $ ?",
+  "locale": "fr-CA",
+  "accountReference": "ACCT-100001",
+  "toolCalls": [
+    {
+      "tool": "find_account",
+      "argument": "ACCT-100001"
+    },
+    {
+      "tool": "get_ledger",
+      "argument": "SEED-TERM-001"
+    }
+  ],
+  "answer": "Votre terme a été facturé en totalité au moment de sa souscription : 1591.60, soit 1440.00 de prime, 129.60 de taxe et les frais de versement. Deux paiements ont été reçus depuis - 130.80 le 2026-07-16 et 132.80 le 2026-08-16 - ce qui laisse le solde de 1328.00 affiché sur le compte.",
+  "usage": {
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "cacheReadTokens": 0,
+    "latencyMillis": 0
+  },
+  "source": "HAND_WRITTEN",
+  "model": null,
+  "recordedAt": null
+}
