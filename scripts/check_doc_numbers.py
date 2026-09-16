@@ -62,6 +62,17 @@ DOCUMENTS = [
     "docs/design-rationale.md",
 ]
 
+# Documents that record one dated run rather than describing the project as it stands. Their figures
+# are checked for screenshots like any other document, but never against the current suite.
+#
+# docs/test-report.md says of itself that "a report is a record of a run and editing its figures would
+# destroy the only thing it is for", and it is right. Holding it to the latest counts would mean that
+# every pull request adding a test rewrote a report of a run that produced different numbers, on a
+# commit that no longer exists, and the document would go on claiming to be a record while being an
+# average of every run since. The report is replaced wholesale at a release; between releases it is
+# history, and history does not reconcile.
+RUN_RECORDS = {"docs/test-report.md"}
+
 MARKER = re.compile(r"<!--count:([a-z-]+)-->\s*([0-9,]+)\s*<!--/count-->")
 
 # Matches both forms a screenshot is referenced by: the relative path the docs use, and the raw
@@ -135,6 +146,8 @@ def main():
     checked = 0
 
     for relative in DOCUMENTS:
+        if relative in RUN_RECORDS:
+            continue
         path = os.path.join(REPO, relative)
         if not os.path.exists(path):
             continue

@@ -21,13 +21,31 @@ from collections import defaultdict
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Packages under billing-app whose tests boot a Spring context. Everything else in the module runs as
+# plain Java with no context at all, and the documentation quotes the two halves separately.
+#
+# This is a list rather than the single `api` it started as because the split is by kind of test, and
+# the package is only a proxy for it. The XML these counts are read from carries a class name and
+# nothing else, so there is no way to ask a report whether its tests booted a context - which means a
+# new package of Spring tests has to be added here, exactly as a new console page has to be added to
+# WebPageModelAdvice. Both are the same shape of trap and neither fails loudly; what fails is the
+# figure, quietly, in a document whose whole purpose is to be accurate.
+SPRING_CONTEXT_PACKAGES = {"api", "assistant"}
+
 # Module -> the layer it is reported as. Ordered as a reader would read them: inside out.
-# The application's own tests are split by package rather than lumped together, because the two halves
-# are different kinds of test and the documentation quotes them separately: domain and service classes
-# run with no Spring context at all, while everything under `api` boots one.
 LAYERS = [
-    ("billing-app", "surefire-reports", "Application — domain and service unit", lambda pkg: pkg != "api"),
-    ("billing-app", "surefire-reports", "Application — Spring integration", lambda pkg: pkg == "api"),
+    (
+        "billing-app",
+        "surefire-reports",
+        "Application — domain and service unit",
+        lambda pkg: pkg not in SPRING_CONTEXT_PACKAGES,
+    ),
+    (
+        "billing-app",
+        "surefire-reports",
+        "Application — Spring integration",
+        lambda pkg: pkg in SPRING_CONTEXT_PACKAGES,
+    ),
     ("qa-api-tests", "failsafe-reports", "API (REST Assured)", None),
     ("qa-ui-tests", "failsafe-reports", "UI (Selenium)", None),
 ]

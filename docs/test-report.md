@@ -9,7 +9,7 @@ one machine, with the evidence it produced.
 | **Commit under test** | `4f2cfde` (`main`), with the 1.2.0 version bump applied |
 | **Application version** | `billing-app` 1.2.0, Spring Boot 3.5.16 |
 | **Executed by** | Abdeljalil Sennaoui, locally |
-| **Result** | **<!--count:total-->477<!--/count--> tests executed, 477 passed, 0 failed, 0 skipped** |
+| **Result** | **477 tests executed, 477 passed, 0 failed, 0 skipped** |
 
 Everything below was produced by the run described in [How the run was performed](#how-the-run-was-performed).
 Nothing in this document is an expected value copied from a specification: the counts come from the
@@ -20,6 +20,11 @@ application itself while the suites were running against it.
 > 165 tests, `billing-app` 1.0.0. That version is in the git history at the `v1.1.0` tag and is not
 > restated here with new numbers, because a report is a record of a run and editing its figures would
 > destroy the only thing it is for.
+>
+> For the same reason, the figures below are **not** held to the current suite by
+> `scripts/check-doc-numbers.sh`. They were true of this run and are meant to stay that way; the suite
+> has grown since, and the living figures are in [`test-inventory.md`](test-inventory.md) and the
+> README. This document is replaced wholesale at the next release rather than reconciled.
 
 ---
 
@@ -27,17 +32,17 @@ application itself while the suites were running against it.
 
 | Suite | Tests | Passed | Failed | Duration | Runner |
 |---|---:|---:|---:|---:|---|
-| Domain and service unit | <!--count:unit-->151<!--/count--> | 151 | 0 | — | JUnit 5 |
-| Application integration (API + web layer) | <!--count:integration-->103<!--/count--> | 103 | 0 | — | JUnit 5 + MockMvc |
+| Domain and service unit | 151 | 151 | 0 | — | JUnit 5 |
+| Application integration (API + web layer) | 103 | 103 | 0 | — | JUnit 5 + MockMvc |
 | *(the two above, as one Maven invocation)* | 254 | 254 | 0 | 9.1 s | |
 | API automation (incl. 7 SOAP) | 104 | 104 | 0 | 2.8 s | TestNG + REST Assured |
-| UI automation | <!--count:ui-->60<!--/count--> | 60 | 0 | 1 min 58 s | TestNG + Selenium 4 |
-| BDD scenarios (24 API + 19 UI) | <!--count:bdd-->43<!--/count--> | 43 | 0 | 42.6 s | Cucumber 7 + TestNG |
-| Smoke | <!--count:cypress-->12<!--/count--> | 12 | 0 | 2 s | Cypress 15 |
+| UI automation | 60 | 60 | 0 | 1 min 58 s | TestNG + Selenium 4 |
+| BDD scenarios (24 API + 19 UI) | 43 | 43 | 0 | 42.6 s | Cucumber 7 + TestNG |
+| Smoke | 12 | 12 | 0 | 2 s | Cypress 15 |
 | Reset endpoint (`test-support` group) | 4 | 4 | 0 | 1.8 s | TestNG + REST Assured |
 | **Total** | **477** | **477** | **0** | **≈ 3 min 15 s** | |
 
-The API automation total is <!--count:api-->108<!--/count--> including the four `test-support` tests,
+The API automation total is 108 including the four `test-support` tests,
 which run separately for the reason given below.
 
 The BDD run reports 43 scenarios over **238 steps** (96 API + 142 UI), all passing.
@@ -77,7 +82,7 @@ That is the fix for DEF-014 — see [section 10](#10-defects).
 | QA reset endpoint | API (`test-support` group, run alone) |
 
 Requirement-by-requirement mapping, by test class and method name, is in
-[`requirements-traceability-matrix.md`](requirements-traceability-matrix.md) — <!--count:requirements-->33<!--/count--> requirements, each
+[`requirements-traceability-matrix.md`](requirements-traceability-matrix.md) — 33 requirements, each
 automated at least once. Every method name in that document was checked against the source before this
 release; two that had gone stale were corrected.
 
@@ -388,7 +393,7 @@ Stated here because a report that only lists what passed is an advertisement.
 
 ## 10. Defects
 
-<!--count:defects-->14<!--/count--> defects were found and fixed while building the project, each documented with steps, root cause
+14 defects were found and fixed while building the project, each documented with steps, root cause
 and fixing commit in [`defect-reports.md`](defect-reports.md). **None is open.**
 
 This release added two, and both were found by looking rather than by a suite going red:
@@ -400,7 +405,7 @@ This release added two, and both were found by looking rather than by a suite go
   other: 171 tests in one document and 165 in another, twelve defects here and nine there. Fixed by
   generating the counts rather than typing them, with a CI check that fails on any disagreement.
 
-<!--count:infra-defects-->4<!--/count--> earlier ones (DEF-005, DEF-007, DEF-008, DEF-010) were defects in the *test infrastructure* rather
+4 earlier ones (DEF-005, DEF-007, DEF-008, DEF-010) were defects in the *test infrastructure* rather
 than the application — a test group selector silently ignored, a start script reporting healthy for a
 server it had not started, Cucumber hooks never registered, and Surefire running an integration test
 without an application. The dangerous ones are the first two: they produced a green or healthy result
