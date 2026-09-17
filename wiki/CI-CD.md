@@ -41,7 +41,7 @@ a red run needs and a green run does not.
 it running only delays the one that matters.
 
 **The `test-support` group is excluded from CI.** It wipes the database, so it cannot run beside the
-parallel regression suite. It runs alone, locally, via `scripts/coverage.sh`. 536 of the 540 tests run on
+parallel regression suite. It runs alone, locally, via `scripts/coverage.sh`. 547 of the 551 tests run on
 every pull request; those two are the exception, and the reason is written down rather than left as a
 gap in the count.
 

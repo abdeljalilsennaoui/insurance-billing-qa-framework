@@ -12,11 +12,11 @@ used to be typed in several places and drifted apart from the suite and from eac
 |---|---:|
 | Application — domain and service unit | 176 |
 | Application — Spring integration | 141 |
-| API (REST Assured) | 108 |
+| API (REST Assured) | 119 |
 | UI (Selenium) | 60 |
 | BDD scenarios (Cucumber) | 43 |
 | Smoke (Cypress) | 12 |
-| **Total** | **540** |
+| **Total** | **551** |
 
 ## By class
 
@@ -62,6 +62,8 @@ used to be typed in several places and drifted apart from the suite and from eac
 | Class | Tests | Result |
 |---|---:|:---:|
 | `AccountMaskingApiIT` | 5 | pass |
+| `AssistantGroundingApiIT` | 5 | pass |
+| `AssistantGuardrailApiIT` | 6 | pass |
 | `CustomerPolicyApiIT` | 13 | pass |
 | `InstallmentScheduleApiIT` | 11 | pass |
 | `InvoicePaymentApiIT` | 10 | pass |
@@ -70,7 +72,7 @@ used to be typed in several places and drifted apart from the suite and from eac
 | `ReturnedPaymentApiIT` | 14 | pass |
 | `SoapInvoiceStatusIT` | 7 | pass |
 | `TransactionLedgerApiIT` | 22 | pass |
-| **Subtotal** | **108** |  |
+| **Subtotal** | **119** |  |
 
 ### UI (Selenium)
 
@@ -117,9 +119,9 @@ A test in neither `regression` nor `ui-regression` never runs in CI.
 
 | Group | Tests |
 |---|---:|
-| `negative` | 33 |
-| `regression` | 76 |
-| `smoke` | 13 |
+| `negative` | 39 |
+| `regression` | 87 |
+| `smoke` | 14 |
 | `soap` | 7 |
 | `test-support` | 4 |
 | `ui-negative` | 8 |

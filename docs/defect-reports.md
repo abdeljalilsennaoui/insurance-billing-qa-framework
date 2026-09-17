@@ -553,8 +553,10 @@ ages the moment the thing it describes changes.
 
 - `scripts/count-tests.sh` parses the surefire and failsafe XML and the Cucumber JSON of the last run
   into `docs/test-inventory.md`.
-- Every headline figure in the documents is wrapped in a marker — `<!--count:api-->108<!--/count-->` —
-  naming which inventory total it claims to be.
+- Every headline figure in the documents is wrapped in a marker — `<!--count:api-->` then the figure
+  then `<!--/count-->` — naming which inventory total it claims to be. (Written out in parts here on
+  purpose: a complete marker in this sentence would be read as a claim about the current suite, and
+  an example of the syntax would then have to be edited every time the suite grew.)
 - `scripts/check-doc-numbers.sh` compares the two and exits non-zero on any disagreement, naming the
   file, the line, the claim and the truth.
 - CI runs that check, so the pipeline fails on a stale number exactly as it fails on a broken test.
