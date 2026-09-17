@@ -3,7 +3,7 @@
 [![CI](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=abdeljalilsennaoui_insurance-billing-qa-framework&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=abdeljalilsennaoui_insurance-billing-qa-framework)
 [![Coverage](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework/branch/main/graph/badge.svg)](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework)
-![Tests](https://img.shields.io/badge/tests-551%20passing-success)
+![Tests](https://img.shields.io/badge/tests-571%20passing-success)
 
 ![Java](https://img.shields.io/badge/Java-25-007396)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F)
@@ -22,7 +22,7 @@ layers of QA automation that exercise it, with the pipeline that runs all of it 
 
 | | |
 |---|---|
-| **Automated tests** | **<!--count:total-->551<!--/count-->**, all passing · 547 run on every pull request |
+| **Automated tests** | **<!--count:total-->571<!--/count-->**, all passing · 567 run on every pull request |
 | **Test levels** | unit · integration · API · UI · BDD · smoke · performance |
 | **Coverage** | 98.4% line, 87.6% branch — [measured full-stack](docs/coverage.md), black-box suites included |
 | **Static analysis** | SonarQube Cloud quality gate **passing** — 0 bugs, 0 vulnerabilities, 0 security hotspots |
@@ -57,15 +57,26 @@ the automation never reads display copy, and a unit test holds the two message b
 a key present in one and missing from the other renders as `??key??` for half the readers and is
 invisible to anyone testing in the other language.
 
+![The billing assistant on the policyholder's screen: an answer, and the records it was read from](docs/screenshots/19-assistant-answer.png)
+
+Both screens also carry a billing assistant: ask why the figures are what they are, and the answer
+comes back with the billing records it was read from. It ships **replaying recorded answers, and says
+so on screen**. The four recordings were written by hand, and no request has yet been made to a live
+model from this repository. What the tests hold it to is the part that has a right answer: every figure
+it states must appear in the records it cites, a question those records cannot answer gets no answer
+rather than an invented one ([screenshot](docs/screenshots/20-assistant-no-answer.png)), and a question
+asked in French is answered in French from the same records
+([screenshot](docs/screenshots/21-assistant-french.png)).
+
 ## What this project demonstrates
 
 | Area | Tools and techniques | Where to look |
 |---|---|---|
-| **UI automation** | Selenium 4, Page Object Model, explicit waits only, parallel-safe `ThreadLocal` drivers | [`qa-ui-tests`](qa-ui-tests) — <!--count:ui-->60<!--/count--> tests |
+| **UI automation** | Selenium 4, Page Object Model, explicit waits only, parallel-safe `ThreadLocal` drivers | [`qa-ui-tests`](qa-ui-tests) — <!--count:ui-->67<!--/count--> tests |
 | **API automation** | REST Assured, TestNG groups and data providers, negative-path coverage | [`qa-api-tests`](qa-api-tests) — <!--count:api-->119<!--/count--> tests |
 | **SOAP testing** | Contract-first XSD → WSDL, fault-path assertions | 7 tests in `qa-api-tests` |
-| **BDD** | Cucumber 7, Gherkin features, step definitions with no automation logic in them | [`qa-bdd-tests`](qa-bdd-tests) — <!--count:bdd-->43<!--/count--> scenarios |
-| **JavaScript E2E** | Cypress 15 smoke suite, as independent triangulation | [`cypress`](cypress) — <!--count:cypress-->12<!--/count--> tests |
+| **BDD** | Cucumber 7, Gherkin features, step definitions with no automation logic in them | [`qa-bdd-tests`](qa-bdd-tests) — <!--count:bdd-->53<!--/count--> scenarios |
+| **JavaScript E2E** | Cypress 15 smoke suite, as independent triangulation | [`cypress`](cypress) — <!--count:cypress-->15<!--/count--> tests |
 | **Localization** | EN/FR message bundles, locale-aware money and dates, parity enforced by test | [`MessageBundleParityTest`](billing-app/src/test/java/com/insurancebilling/config/MessageBundleParityTest.java) |
 | **Performance** | JMeter plan with per-thread fixtures, measured and reported honestly | [`perf`](perf/README.md) |
 | **CI/CD** | GitHub Actions — artifact passing, health-polled startup, coverage merged across jobs | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
@@ -127,13 +138,13 @@ other.
 | Domain and service unit | <!--count:unit-->176<!--/count--> | JUnit 5 | yes |
 | Application integration (API + web layer) | <!--count:integration-->141<!--/count--> | JUnit 5 + MockMvc | yes |
 | API automation (incl. 7 SOAP, 4 `test-support`) | <!--count:api-->119<!--/count--> | TestNG + REST Assured | 115 of 119 |
-| UI automation | <!--count:ui-->60<!--/count--> | TestNG + Selenium 4 | yes |
-| BDD scenarios (24 API + 19 UI) | <!--count:bdd-->43<!--/count--> | Cucumber 7 + TestNG | yes |
-| Smoke | <!--count:cypress-->12<!--/count--> | Cypress | yes |
-| **Total** | **<!--count:total-->551<!--/count-->** | | **547** |
+| UI automation | <!--count:ui-->67<!--/count--> | TestNG + Selenium 4 | yes |
+| BDD scenarios (29 API + 24 UI) | <!--count:bdd-->53<!--/count--> | Cucumber 7 + TestNG | yes |
+| Smoke | <!--count:cypress-->15<!--/count--> | Cypress | yes |
+| **Total** | **<!--count:total-->571<!--/count-->** | | **567** |
 | Performance | 1 plan | JMeter | no — run manually, see [perf](perf/README.md) |
 
-547 of the 551 run on every pull request across five CI jobs, with a sixth that runs no tests and
+567 of the 571 run on every pull request across five CI jobs, with a sixth that runs no tests and
 publishes their merged coverage. The four excluded are the `test-support` reset tests, which wipe the
 database and therefore cannot run beside anything else; `scripts/coverage.sh` runs them last, on their
 own.

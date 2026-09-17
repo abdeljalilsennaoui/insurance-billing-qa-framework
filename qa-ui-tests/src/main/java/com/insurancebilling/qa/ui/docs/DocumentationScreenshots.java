@@ -204,6 +204,46 @@ public final class DocumentationScreenshots {
     capture(
         "14-agent-console-ledger",
         "The same ledger the policyholder sees in 11, read from the agent's console");
+
+    captureAssistant();
+  }
+
+  /**
+   * The billing assistant, asked the questions its recorded answers were written for.
+   *
+   * <p>Numbered after the reports rather than beside the other console screens, because images are
+   * appended and never renumbered: the 1.2 renumbering left a live 404 on the wiki.
+   *
+   * <p>The panel says on screen that these answers were replayed, and the screenshots keep that note in
+   * frame. A picture of a recorded answer that looked like a live one would be the documentation making
+   * the claim the application is careful not to make.
+   */
+  private void captureAssistant() {
+    // Back to English explicitly. The language choice outlives the page it was made on and 12 leaves
+    // the console in French, and a recorded answer is keyed by language: the English question asked on
+    // a French console has no recording, so 19 would show the console saying it has no answer.
+    new TermsPage()
+        .open("ACCT-100001")
+        .switchLanguageTo("en")
+        .askAssistant("Why is my balance 1,328.00?");
+    capture(
+        "19-assistant-answer",
+        "The assistant on the policyholder's screen: an answer, the records it was read from, and where it came from");
+
+    new TermsPage()
+        .open("ACCT-100001")
+        .askAssistant("What is the airspeed velocity of an unladen swallow?");
+    capture(
+        "20-assistant-no-answer",
+        "A question the billing records cannot answer: no answer, and no records cited, rather than an invented one");
+
+    new TermsPage()
+        .open("ACCT-100001")
+        .switchLanguageTo("fr")
+        .askAssistant("Pourquoi mon solde est-il de 1 328,00 $ ?");
+    capture(
+        "21-assistant-french",
+        "The same question in French: the answer is in French, the records it cites are the same");
   }
 
   /** The HTML reports produced by the suites and by the coverage and performance tooling. */
