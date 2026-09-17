@@ -57,7 +57,9 @@ public class AssistantPanelUiIT extends BaseUiTest {
     String policyholderAnswer = policyholder.assistantAnswerText();
     List<String> policyholderTrace = policyholder.assistantTrace();
 
-    AgentConsolePage agent = new AgentConsolePage().open();
+    // Opened on the policyholder's own term. Left to choose, the console selects the first term by
+    // policy number, and after any suite has created data that is somebody else's.
+    AgentConsolePage agent = new AgentConsolePage().open(policyholder.termReference(), "summary");
     agent.askAssistant(RECORDED_QUESTION);
 
     assertThat(agent.assistantAnswerText())

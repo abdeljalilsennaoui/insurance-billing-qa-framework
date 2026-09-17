@@ -72,7 +72,9 @@ public class BillingAssistantUiSteps {
 
   @When("an agent asks the assistant the same question")
   public void anAgentAsksTheSameQuestion() {
-    agentPage = new AgentConsolePage().open();
+    // On the policyholder's own term. Left to choose, the console selects the first term by policy
+    // number, and after any suite has created data that is somebody else's.
+    agentPage = new AgentConsolePage().open(policyholderPage.termReference(), "summary");
     agentPage.askAssistant(QUESTION);
   }
 
