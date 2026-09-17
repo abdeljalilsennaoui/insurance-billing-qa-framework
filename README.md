@@ -5,7 +5,7 @@
 [![Coverage](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework/branch/main/graph/badge.svg)](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework)
 ![Tests](https://img.shields.io/badge/tests-551%20passing-success)
 
-![Java](https://img.shields.io/badge/Java-21-007396)
+![Java](https://img.shields.io/badge/Java-25-007396)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F)
 ![Selenium](https://img.shields.io/badge/UI-Selenium%204-43B02A)
 ![REST Assured](https://img.shields.io/badge/API-REST%20Assured-green)
@@ -72,7 +72,7 @@ invisible to anyone testing in the other language.
 | **Code quality** | JaCoCo, SonarQube Cloud, Codecov, and what each is allowed to gate | [`docs/code-quality.md`](docs/code-quality.md) |
 | **Test design** | <!--count:cases-->34<!--/count--> manual test cases, <!--count:requirements-->33<!--/count--> requirements traced to test methods by name | [`docs/`](docs) |
 | **Defect reporting** | 14 written up in professional form — including three in the *test* infrastructure | [`docs/defect-reports.md`](docs/defect-reports.md) |
-| **Application development** | Java 21, Spring Boot 3, JPA, Thymeleaf, Bean Validation | [`billing-app`](billing-app) |
+| **Application development** | Java 25, Spring Boot 3, JPA, Thymeleaf, Bean Validation | [`billing-app`](billing-app) |
 
 ## Start here
 
@@ -255,7 +255,7 @@ assertion could not tell "the client sent nonsense" from "the platform applied a
 
 ## Prerequisites
 
-- JDK 21
+- JDK 25
 - Maven 3.9+
 - Google Chrome (for the browser suites)
 - Node.js 20+ (for the Cypress suite)
