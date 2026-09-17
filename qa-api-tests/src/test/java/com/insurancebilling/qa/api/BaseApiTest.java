@@ -1,5 +1,6 @@
 package com.insurancebilling.qa.api;
 
+import com.insurancebilling.qa.api.client.AssistantApiClient;
 import com.insurancebilling.qa.api.client.BillingApiClient;
 import com.insurancebilling.qa.api.client.CustomerApiClient;
 import com.insurancebilling.qa.api.client.InvoiceApiClient;
@@ -28,6 +29,7 @@ public abstract class BaseApiTest {
   protected final PolicyApiClient policies = new PolicyApiClient();
   protected final InvoiceApiClient invoices = new InvoiceApiClient();
   protected final BillingApiClient billing = new BillingApiClient();
+  protected final AssistantApiClient assistant = new AssistantApiClient();
   protected final BillingTestData testData = new BillingTestData();
 
   @BeforeSuite(alwaysRun = true)
