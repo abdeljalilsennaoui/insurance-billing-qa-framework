@@ -1,13 +1,13 @@
 # Running the suites
 
-Everything here has been run on macOS with JDK 21 and on Ubuntu runners in CI. Full detail is in the
+The suites here have been run on macOS with JDK 25 and on Ubuntu runners in CI. Full detail is in the
 [README](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework#readme).
 
 ## Prerequisites
 
 | | |
 |---|---|
-| JDK | 21 — the build targets it via `maven.compiler.release`, and CI pins the same major |
+| JDK | 25 — the build targets it via `maven.compiler.release`, and CI pins the same major |
 | Maven | 3.9+ |
 | Browser | Google Chrome. No driver to install: Selenium Manager resolves a matching chromedriver at runtime |
 | Node | 22+, only for the Cypress smoke suite |
@@ -89,11 +89,11 @@ hook does not run and the binary is missing after `npm ci`:
 cd cypress && npm ci && npx cypress install && npx cypress verify
 ```
 
-**`JAVA_HOME` pointing at the wrong JDK.** If Maven picks up a JDK other than 21, the build is not the
-one the project claims to support:
+**`JAVA_HOME` pointing at the wrong JDK.** If Maven picks up a JDK older than 25, compilation stops with
+`error: release version 25 not supported`. A newer one builds, but it is not the JDK CI runs:
 
 ```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # macOS
+export JAVA_HOME=$(/usr/libexec/java_home -v 25)   # macOS
 ```
 
 ## What a clean run looks like
