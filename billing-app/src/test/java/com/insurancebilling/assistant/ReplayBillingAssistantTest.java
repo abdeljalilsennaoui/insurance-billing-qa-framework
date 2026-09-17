@@ -186,21 +186,36 @@ class ReplayBillingAssistantTest {
   @Test
   @DisplayName("the configured provider is the one that is built")
   void theConfiguredProviderIsTheOneThatIsBuilt() {
-    AssistantConfiguration configuration = new AssistantConfiguration();
-
-    assertThat(configuration.billingAssistant("replay")).isInstanceOf(ReplayBillingAssistant.class);
-    assertThat(configuration.billingAssistant("  REPLAY ")).isInstanceOf(ReplayBillingAssistant.class);
-    assertThat(configuration.billingAssistant("disabled")).isInstanceOf(DisabledBillingAssistant.class);
+    assertThat(built("replay")).isInstanceOf(ReplayBillingAssistant.class);
+    assertThat(built("  REPLAY ")).isInstanceOf(ReplayBillingAssistant.class);
+    assertThat(built("disabled")).isInstanceOf(DisabledBillingAssistant.class);
   }
 
   @Test
   @DisplayName("an unknown provider fails startup, naming itself and the accepted values")
   void anUnknownProviderFailsStartup() {
-    assertThatThrownBy(() -> new AssistantConfiguration().billingAssistant("antropic"))
+    assertThatThrownBy(() -> built("antropic"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("antropic")
         .hasMessageContaining("replay")
-        .hasMessageContaining("disabled");
+        .hasMessageContaining("disabled")
+        .hasMessageContaining("anthropic");
+  }
+
+  @Test
+  @DisplayName("a client is built with an explicit key and base url, without reading the environment")
+  void aClientIsBuiltWithAnExplicitKeyAndBaseUrl() {
+    AssistantConfiguration configuration = new AssistantConfiguration();
+
+    assertThat(configuration.anthropicClient("http://localhost:1/", "test-key-not-a-real-credential"))
+        .isNotNull();
+    assertThat(configuration.anthropicClient("  ", "test-key-not-a-real-credential")).isNotNull();
+  }
+
+  /** The provider switch, with everything the model-backed branch would need but does not use here. */
+  private BillingAssistant built(String provider) {
+    return new AssistantConfiguration()
+        .billingAssistant(provider, "claude-opus-5", 2048L, "", null);
   }
 
   // ---------------------------------------------------------------------------------------------

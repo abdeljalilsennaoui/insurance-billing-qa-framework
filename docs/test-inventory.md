@@ -10,13 +10,13 @@ used to be typed in several places and drifted apart from the suite and from eac
 
 | Layer | Count |
 |---|---:|
-| Application — domain and service unit | 175 |
-| Application — Spring integration | 112 |
+| Application — domain and service unit | 176 |
+| Application — Spring integration | 125 |
 | API (REST Assured) | 108 |
 | UI (Selenium) | 60 |
 | BDD scenarios (Cucumber) | 43 |
 | Smoke (Cypress) | 12 |
-| **Total** | **510** |
+| **Total** | **524** |
 
 ## By class
 
@@ -25,7 +25,7 @@ used to be typed in several places and drifted apart from the suite and from eac
 | Class | Tests | Result |
 |---|---:|:---:|
 | `BillingFormatsTest` | 10 | pass |
-| `ReplayBillingAssistantTest` | 14 | pass |
+| `ReplayBillingAssistantTest` | 15 | pass |
 | `MessageBundleParityTest` | 7 | pass |
 | `BankAccountReferenceTest` | 17 | pass |
 | `BillingAccountTest` | 8 | pass |
@@ -36,7 +36,7 @@ used to be typed in several places and drifted apart from the suite and from eac
 | `PolicyTermLedgerTest` | 22 | pass |
 | `ReturnedPaymentTest` | 15 | pass |
 | `InstallmentScheduleGeneratorTest` | 21 | pass |
-| **Subtotal** | **175** |  |
+| **Subtotal** | **176** |  |
 
 ### Application — Spring integration
 
@@ -50,9 +50,10 @@ used to be typed in several places and drifted apart from the suite and from eac
 | `InvoiceOverdueBusinessZoneTest` | 6 | pass |
 | `InvoicePaymentApiIntegrationTest` | 16 | pass |
 | `LocalisedConsoleWebTest` | 13 | pass |
+| `AnthropicBillingAssistantTest` | 13 | pass |
 | `BillingReadToolsTest` | 13 | pass |
 | `ShippedTranscriptsTest` | 6 | pass |
-| **Subtotal** | **112** |  |
+| **Subtotal** | **125** |  |
 
 ### API (REST Assured)
 
