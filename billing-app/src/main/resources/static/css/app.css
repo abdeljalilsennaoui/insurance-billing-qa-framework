@@ -558,3 +558,114 @@ button:hover {
     flex-wrap: wrap;
   }
 }
+
+/* ---------------------------------------------------------------------------------------------
+   The billing assistant panel.
+
+   Rendered below the term panels on both consoles, from one fragment. Deliberately quieter than the
+   figures above it: the arithmetic on the screen is the record, and the assistant explains it.
+   --------------------------------------------------------------------------------------------- */
+
+.assistant {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+}
+
+.assistant h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  color: var(--accent-dark);
+}
+
+.assistant-note {
+  margin: 0 0 0.9rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.assistant-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.assistant-form label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.assistant-form input {
+  flex: 1 1 22rem;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font: inherit;
+  color: var(--ink);
+}
+
+.assistant-form button {
+  padding: 0.5rem 1.1rem;
+  background: var(--accent);
+  color: var(--surface);
+  border: 0;
+  border-radius: 3px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.assistant-form button:hover {
+  background: var(--accent-dark);
+}
+
+.assistant-answer {
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line);
+}
+
+.assistant-answer > p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* An answer the assistant could not give reads as a note, not as a finding about the account. */
+.assistant-answer[data-available="false"] > p {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.assistant-trace {
+  margin-top: 1rem;
+}
+
+.assistant-trace h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.assistant-trace ol {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.assistant-trace code {
+  padding: 0.05rem 0.3rem;
+  background: var(--neutral);
+  border-radius: 2px;
+  font-size: 0.8rem;
+}

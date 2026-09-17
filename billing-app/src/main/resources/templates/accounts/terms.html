@@ -36,6 +36,10 @@
       <div th:replace="~{fragments/term :: header(${selectedTerm})}"></div>
       <div th:replace="~{fragments/term :: tabs(${tabBasePath}, ${selectedTerm}, ${activeTab})}"></div>
       <th:block th:replace="~{fragments/term :: panels(${selectedTerm}, ${schedule}, ${ledger}, ${activeTab})}"></th:block>
+
+      <th:block th:replace="~{fragments/assistant :: panel(${account.accountReference},
+                              '/accounts/' + ${account.accountReference} + '/assistant',
+                              ${selectedTerm.termReference}, ${activeTab})}"></th:block>
     </div>
   </main>
 </div>

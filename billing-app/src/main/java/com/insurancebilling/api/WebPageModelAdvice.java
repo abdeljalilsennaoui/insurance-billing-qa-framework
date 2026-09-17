@@ -7,9 +7,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 /**
  * Supplies what every rendered page needs and no controller should have to remember.
  *
- * <p>Currently one thing: the path the reader is on, so the language switch can send them back to the
- * same page in the other language rather than to the invoice list. A switch that loses your place is
- * worse than no switch.
+ * <p>Two things. The path the reader is on, so the language switch can send them back to the same page
+ * in the other language rather than to the invoice list - a switch that loses your place is worse than
+ * no switch. And which assistant is answering, so the panel can say so on every screen that renders it
+ * without each controller having to remember to pass it.
  *
  * <p>Scoped to the controllers that render HTML. A {@code @ControllerAdvice} with no {@code
  * assignableTypes} would also run for every JSON endpoint, which would be harmless and pointless.
@@ -26,6 +27,25 @@ import org.springframework.web.bind.annotation.ModelAttribute;
       AgentConsoleWebController.class
     })
 public class WebPageModelAdvice {
+
+  private final AssistantPanel assistantPanel;
+
+  public WebPageModelAdvice(AssistantPanel assistantPanel) {
+    this.assistantPanel = assistantPanel;
+  }
+
+  /**
+   * Which assistant is answering: {@code anthropic}, {@code replay} or {@code disabled}.
+   *
+   * <p>On the model rather than read in the template, because the panel renders it to the reader and
+   * the suites assert on it. An application that showed a recorded answer as though a model had just
+   * produced it would be misrepresenting itself, and the only way that claim stays true is if the
+   * screen is told the truth in one place.
+   */
+  @ModelAttribute("assistantProvider")
+  public String assistantProvider() {
+    return assistantPanel.provider();
+  }
 
   /**
    * The page the reader is on, query string and all, with any existing {@code lang} removed.

@@ -14,6 +14,7 @@ import java.util.List;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -53,9 +54,35 @@ public class AgentConsoleWebController {
           .thenComparingInt(PolicyTerm::getTermNumber);
 
   private final BillingService billing;
+  private final AssistantPanel assistantPanel;
 
-  public AgentConsoleWebController(BillingService billing) {
+  public AgentConsoleWebController(BillingService billing, AssistantPanel assistantPanel) {
     this.billing = billing;
+    this.assistantPanel = assistantPanel;
+  }
+
+  /**
+   * Puts a question to the assistant and re-renders the console with the answer on it.
+   *
+   * <p>The account comes from the selected term rather than from the request. An agent looking at a
+   * term is asking about the account that term is billed to, and a parameter naming a different one
+   * would let the screen and the answer disagree about whose money is being discussed.
+   */
+  @PostMapping("/assistant")
+  public String ask(
+      @RequestParam(required = false) String term,
+      @RequestParam(required = false, defaultValue = "summary") String tab,
+      @RequestParam(required = false) String question,
+      Model model) {
+
+    String view = console(term, tab, model);
+    PolicyTermResponse selected = (PolicyTermResponse) model.getAttribute("selectedTerm");
+    if (selected != null) {
+      model.addAttribute(
+          "assistantAnswer", assistantPanel.answer(selected.accountReference(), question));
+      model.addAttribute("assistantQuestion", question);
+    }
+    return view;
   }
 
   @GetMapping

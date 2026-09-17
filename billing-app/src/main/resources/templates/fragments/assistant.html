@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  The assistant panel, rendered identically on the policyholder's terms screen and the agent console.
+
+  One fragment for the same reason the term panels are one fragment: an agent reading a different
+  answer than the policyholder can read for themselves is the failure these consoles exist to avoid.
+
+  Every status and figure the automation needs rides on a data-* attribute, never on display copy, so
+  the suites assert the same thing in English and in French. That includes the provider: a reader has
+  to be able to tell a recorded answer from a live one, and so does a test.
+-->
+<th:block th:fragment="panel(accountReference, formAction, term, tab)">
+  <section class="assistant" data-testid="assistant-panel"
+           th:attr="data-provider=${assistantProvider}">
+    <h2 data-testid="assistant-heading" th:text="#{assistant.heading}">Ask about this bill</h2>
+
+    <p class="assistant-note" data-testid="assistant-provider-note"
+       th:if="${assistantProvider == 'replay'}"
+       th:text="#{assistant.provider.replay}">
+      Answers are replayed from recorded exchanges.
+    </p>
+    <p class="assistant-note" data-testid="assistant-provider-note"
+       th:if="${assistantProvider == 'disabled'}"
+       th:text="#{assistant.provider.disabled}">
+      The assistant is switched off.
+    </p>
+
+    <form method="post" th:action="@{${formAction}(term=${term}, tab=${tab})}" class="assistant-form">
+      <label for="assistant-question" th:text="#{assistant.question.label}">Your question</label>
+      <input type="text" id="assistant-question" name="question" maxlength="500"
+             data-testid="assistant-question"
+             th:value="${assistantQuestion}"
+             th:placeholder="#{assistant.question.placeholder}">
+      <button type="submit" data-testid="assistant-submit" th:text="#{assistant.submit}">Ask</button>
+    </form>
+
+    <div th:if="${assistantAnswer != null}" class="assistant-answer"
+         data-testid="assistant-answer"
+         th:attr="data-available=${assistantAnswer.available()}">
+
+      <p data-testid="assistant-answer-text" th:text="${assistantAnswer.answer()}"></p>
+
+      <!--
+        The calls behind the answer. Shown rather than logged: an answer about money that cannot be
+        traced back to the figures it came from is not evidence of anything, and this is the list the
+        grounding assertions read.
+      -->
+      <div th:if="${!assistantAnswer.toolCalls().isEmpty()}" class="assistant-trace">
+        <h3 data-testid="assistant-trace-heading" th:text="#{assistant.trace.heading}">Where this came from</h3>
+        <ol>
+          <li th:each="call : ${assistantAnswer.toolCalls()}"
+              data-testid="assistant-trace-row"
+              th:attr="data-tool=${call.tool()}, data-argument=${call.argument()}">
+            <span th:text="#{'assistant.tool.' + ${call.tool()}}">tool</span>
+            <code th:text="${call.argument()}">reference</code>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</th:block>
+
+</body>
+</html>
