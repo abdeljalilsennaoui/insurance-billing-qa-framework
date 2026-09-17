@@ -13,10 +13,10 @@ used to be typed in several places and drifted apart from the suite and from eac
 | Application — domain and service unit | 176 |
 | Application — Spring integration | 141 |
 | API (REST Assured) | 119 |
-| UI (Selenium) | 60 |
-| BDD scenarios (Cucumber) | 43 |
-| Smoke (Cypress) | 12 |
-| **Total** | **551** |
+| UI (Selenium) | 67 |
+| BDD scenarios (Cucumber) | 53 |
+| Smoke (Cypress) | 15 |
+| **Total** | **571** |
 
 ## By class
 
@@ -80,23 +80,26 @@ used to be typed in several places and drifted apart from the suite and from eac
 |---|---:|:---:|
 | `AccountSummaryUiIT` | 8 | pass |
 | `AgentConsoleUiIT` | 9 | pass |
+| `AssistantPanelUiIT` | 7 | pass |
 | `BilingualConsoleUiIT` | 7 | pass |
 | `InvoiceListUiIT` | 7 | pass |
 | `InvoicePaymentUiIT` | 13 | pass |
 | `TermScheduleUiIT` | 8 | pass |
 | `TransactionLedgerUiIT` | 8 | pass |
-| **Subtotal** | **60** |  |
+| **Subtotal** | **67** |  |
 
 ### BDD scenarios (Cucumber)
 
 | Feature | Scenarios | Steps | Result |
 |---|---:|---:|:---:|
+| Asking the billing assistant about a bill | 5 | 21 | pass |
+| Holding the billing assistant's answers to the billing records | 5 | 16 | pass |
 | Invoice payment rules over the billing API | 14 | 55 | pass |
 | Paying a policy term by installments | 10 | 41 | pass |
 | Paying an invoice through the billing console | 6 | 29 | pass |
 | Reading a policy term on screen | 8 | 36 | pass |
 | Reading the billing console in either official language | 5 | 33 | pass |
-| **Subtotal** | **43** | **194** |  |
+| **Subtotal** | **53** | **231** |  |
 
 ### Smoke (Cypress)
 
@@ -105,9 +108,10 @@ than Maven and produces no machine-readable artefact by default.
 
 | Spec | Tests |
 |---|---:|
+| `billing_assistant_smoke.cy.js` | 3 |
 | `billing_console_smoke.cy.js` | 5 |
 | `invoice_console_smoke.cy.js` | 7 |
-| **Subtotal** | **12** |
+| **Subtotal** | **15** |
 
 ## TestNG groups
 
@@ -125,8 +129,8 @@ A test in neither `regression` nor `ui-regression` never runs in CI.
 | `soap` | 7 |
 | `test-support` | 4 |
 | `ui-negative` | 8 |
-| `ui-regression` | 60 |
-| `ui-smoke` | 11 |
+| `ui-regression` | 67 |
+| `ui-smoke` | 12 |
 
 ## Document catalogue
 
