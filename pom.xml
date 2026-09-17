@@ -30,6 +30,7 @@
     <rest.assured.version>5.5.7</rest.assured.version>
     <testng.version>7.12.0</testng.version>
     <cucumber.version>7.34.8</cucumber.version>
+    <anthropic.sdk.version>2.63.0</anthropic.sdk.version>
     <assertj.version>3.27.7</assertj.version>
     <slf4j.version>2.0.17</slf4j.version>
 
@@ -108,6 +109,18 @@
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
         <version>${assertj.version}</version>
+      </dependency>
+      <!--
+        The vendor's own SDK rather than an abstraction over several providers. Spring AI is the
+        framework-idiomatic choice and was rejected for a concrete reason, recorded in
+        docs/design-rationale.md: spring-ai-starter-mcp-server-webmvc 2.0.1 declares
+        spring-boot-starter-web 4.1.1, so adopting it would drag this application from Spring Boot 3.5
+        to 4.1. This dependency is a plain library with no opinion about the framework around it.
+      -->
+      <dependency>
+        <groupId>com.anthropic</groupId>
+        <artifactId>anthropic-java</artifactId>
+        <version>${anthropic.sdk.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

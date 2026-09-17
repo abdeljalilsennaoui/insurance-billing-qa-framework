@@ -55,6 +55,11 @@
       <artifactId>h2</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <!-- The billing assistant's model-backed provider. See com.insurancebilling.assistant. -->
+    <dependency>
+      <groupId>com.anthropic</groupId>
+      <artifactId>anthropic-java</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -64,6 +69,18 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      A real HTTP server on localhost that the SDK is pointed at with its own baseUrl override, so the
+      model-backed provider - the tool loop, the retries, the error mapping - is exercised end to end
+      without a key, without the network and without cost. The alternative was mocking the SDK's own
+      types, which would have tested that the mock behaves as the mock was told to.
+    -->
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>mockwebserver</artifactId>
+      <version>${mockwebserver.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -77,6 +94,13 @@
     -->
     <sonar.exclusions>**/soap/generated/**</sonar.exclusions>
     <jaxb.runtime.version>4.0.9</jaxb.runtime.version>
+    <!--
+      Pinned to the OkHttp the Anthropic SDK brings (anthropic-java-client-okhttp 2.63.0 -> okhttp
+      4.12.0). MockWebServer and OkHttp share internals, so a mismatched pair fails at runtime with a
+      NoSuchMethodError rather than at resolution. Spring Boot's BOM manages okhttp but not
+      mockwebserver, which is why this is here rather than inherited.
+    -->
+    <mockwebserver.version>4.12.0</mockwebserver.version>
     <wsdl4j.version>1.6.3</wsdl4j.version>
     <jaxb2.plugin.version>3.2.0</jaxb2.plugin.version>
   </properties>
