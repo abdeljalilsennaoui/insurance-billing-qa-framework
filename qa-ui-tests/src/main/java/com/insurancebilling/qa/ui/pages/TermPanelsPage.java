@@ -17,6 +17,10 @@ import org.openqa.selenium.WebElement;
  *
  * <p>Rows are addressed by their installment number or transaction reference, never by position. A
  * schedule reordered by a defect would still satisfy an index-based assertion.
+ *
+ * <p>The billing assistant panel is read from here for the same reason the term panels are: it is one
+ * Thymeleaf fragment rendered on both screens, and accessors kept in two places would drift until the
+ * two consoles could no longer be compared.
  */
 public abstract class TermPanelsPage extends BasePage {
 
@@ -199,5 +203,71 @@ public abstract class TermPanelsPage extends BasePage {
                             .toList()))
         .findElement(testId(cellTestId))
         .getDomAttribute(attribute);
+  }
+
+  // -------------------------------------------------------------- assistant
+
+  public boolean showsAssistantPanel() {
+    return isPresent("assistant-panel");
+  }
+
+  /** Which assistant answered: anthropic, replay or disabled. Read, not assumed. */
+  public String assistantProvider() {
+    return attributeOf("assistant-panel", "data-provider");
+  }
+
+  /**
+   * Types a question and submits it.
+   *
+   * <p>The form is an ordinary POST that re-renders the page, so this waits for a new document like
+   * every other navigation in this suite rather than polling for text to change. A wait on the text
+   * would pass the instant the old page still showed the previous answer.
+   */
+  public TermPanelsPage askAssistant(String question) {
+    type("assistant-question", question);
+    markCurrentDocument();
+    click("assistant-submit");
+    waitForNewDocument();
+    waitUntilLoaded();
+    return this;
+  }
+
+  public boolean showsAssistantAnswer() {
+    return isPresent("assistant-answer");
+  }
+
+  /** True when the assistant answered, false when it had nothing to say. Read from the attribute. */
+  public boolean assistantAnswered() {
+    return "true".equals(attributeOf("assistant-answer", "data-available"));
+  }
+
+  public String assistantAnswerText() {
+    return textOf("assistant-answer-text");
+  }
+
+  /**
+   * The tools behind the answer, in the order the assistant called them.
+   *
+   * <p>Empty is a legitimate answer here - an assistant that had nothing to say made no calls - so
+   * this must not use the waiting accessors. {@code allVisible} waits for the element to appear, which
+   * for an answer with no trace means fifteen seconds and then a timeout dressed up as a failure. A
+   * negative check has to be able to observe absence quickly and say so.
+   */
+  public List<String> assistantTrace() {
+    return traceAttribute("data-tool");
+  }
+
+  /** The reference each call was made with, so a test can check it stayed inside the account. */
+  public List<String> assistantTraceArguments() {
+    return traceAttribute("data-argument");
+  }
+
+  private List<String> traceAttribute(String attribute) {
+    if (!isPresent("assistant-trace-row")) {
+      return List.of();
+    }
+    return allVisible("assistant-trace-row").stream()
+        .map(row -> row.getDomAttribute(attribute))
+        .toList();
   }
 }
