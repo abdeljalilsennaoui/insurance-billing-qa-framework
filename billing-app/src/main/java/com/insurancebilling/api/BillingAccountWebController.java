@@ -116,9 +116,14 @@ public class BillingAccountWebController {
       @RequestParam(required = false) String question,
       Model model) {
 
+    // The screen is rendered first, so an account that does not exist throws before the assistant is
+    // asked anything. Asking first would mean a question about a non-existent account cost a model
+    // call and then returned a 404 anyway - free under the replay provider, billed under a live one.
+    String view = terms(accountReference, term, tab, model);
+
     model.addAttribute("assistantAnswer", assistantPanel.answer(accountReference, question));
     model.addAttribute("assistantQuestion", question);
-    return terms(accountReference, term, tab, model);
+    return view;
   }
 
   /**

@@ -11,12 +11,12 @@ used to be typed in several places and drifted apart from the suite and from eac
 | Layer | Count |
 |---|---:|
 | Application — domain and service unit | 176 |
-| Application — Spring integration | 140 |
+| Application — Spring integration | 141 |
 | API (REST Assured) | 108 |
 | UI (Selenium) | 60 |
 | BDD scenarios (Cucumber) | 43 |
 | Smoke (Cypress) | 12 |
-| **Total** | **539** |
+| **Total** | **540** |
 
 ## By class
 
@@ -44,7 +44,7 @@ used to be typed in several places and drifted apart from the suite and from eac
 |---|---:|:---:|
 | `AgentConsoleWebTest` | 16 | pass |
 | `AssistantEndpointTest` | 6 | pass |
-| `AssistantPanelWebTest` | 9 | pass |
+| `AssistantPanelWebTest` | 10 | pass |
 | `BillingAccountApiIntegrationTest` | 14 | pass |
 | `CustomerPolicyApiIntegrationTest` | 12 | pass |
 | `InstallmentInvoiceLedgerIntegrationTest` | 5 | pass |
@@ -55,7 +55,7 @@ used to be typed in several places and drifted apart from the suite and from eac
 | `AnthropicBillingAssistantTest` | 13 | pass |
 | `BillingReadToolsTest` | 13 | pass |
 | `ShippedTranscriptsTest` | 6 | pass |
-| **Subtotal** | **140** |  |
+| **Subtotal** | **141** |  |
 
 ### API (REST Assured)
 

@@ -174,6 +174,19 @@ class AssistantPanelWebTest {
   }
 
   @Test
+  @DisplayName("a question about an account that does not exist is a 404, and costs nothing")
+  void aQuestionAboutAnAccountThatDoesNotExistIsA404() throws Exception {
+    // The screen is rendered before the assistant is asked, so the account is resolved first. Asking
+    // first would mean this request cost a model call under a live provider and then 404'd anyway.
+    // The status is what is observable here; the ordering in the controller is what produces it.
+    mockMvc
+        .perform(
+            post("/accounts/ACCT-NOPE/assistant")
+                .param("question", RECORDED_QUESTION))
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isNotFound());
+  }
+
+  @Test
   @DisplayName("an empty question renders the panel again rather than an empty answer")
   void anEmptyQuestionRendersThePanelAgain() throws Exception {
     String html = policyholderAsks("   ", "en");
