@@ -211,6 +211,11 @@ public abstract class TermPanelsPage extends BasePage {
     return isPresent("assistant-panel");
   }
 
+  /** The panel's heading as displayed. Display copy, so for language tests only. */
+  public String assistantHeading() {
+    return textOf("assistant-heading");
+  }
+
   /** Which assistant answered: anthropic, replay or disabled. Read, not assumed. */
   public String assistantProvider() {
     return attributeOf("assistant-panel", "data-provider");

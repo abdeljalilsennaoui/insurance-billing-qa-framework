@@ -91,7 +91,17 @@ public class AssistantPanelUiIT extends BaseUiTest {
 
   @Test(groups = "ui-regression")
   public void theFrenchPanelAnswersInFrenchAndReadsTheSame() {
-    TermsPage page = new TermsPage().open(SEEDED_ACCOUNT).switchLanguageTo("fr");
+    TermsPage page = new TermsPage().open(SEEDED_ACCOUNT);
+    String englishHeading = page.assistantHeading();
+    page.switchLanguageTo("fr");
+
+    // The panel's own chrome, compared with itself rather than pinned to a translation: a heading
+    // still in English, or a missing key rendered as ??key??, is a panel the French reader cannot use.
+    assertThat(page.assistantHeading())
+        .as("the assistant panel's heading after switching to French")
+        .isNotBlank()
+        .isNotEqualTo(englishHeading)
+        .doesNotStartWith("??");
 
     page.askAssistant(RECORDED_QUESTION_FR);
 
