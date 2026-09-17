@@ -18,9 +18,9 @@ pipeline {
     agent any
 
     tools {
-        // Configure a JDK of this name under Manage Jenkins > Tools. Pinned to 21 to match
+        // Configure a JDK of this name under Manage Jenkins > Tools. Pinned to 25 to match
         // maven.compiler.release, so the pipeline cannot pass on a JDK the project does not target.
-        jdk 'jdk-21'
+        jdk 'jdk-25'
         maven 'maven-3.9'
     }
 

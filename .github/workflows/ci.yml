@@ -16,7 +16,7 @@ concurrency:
 env:
   # Pinned to the same major the build targets via maven.compiler.release, so CI cannot pass on a
   # JDK the project does not claim to support.
-  JAVA_VERSION: '21'
+  JAVA_VERSION: '25'
 
 jobs:
   build:
