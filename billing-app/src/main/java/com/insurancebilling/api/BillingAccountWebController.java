@@ -14,6 +14,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -37,9 +38,11 @@ public class BillingAccountWebController {
   static final List<String> TERM_TABS = List.of("summary", "transactions", "schedule");
 
   private final BillingService billing;
+  private final AssistantPanel assistantPanel;
 
-  public BillingAccountWebController(BillingService billing) {
+  public BillingAccountWebController(BillingService billing, AssistantPanel assistantPanel) {
     this.billing = billing;
+    this.assistantPanel = assistantPanel;
   }
 
   @GetMapping("/{accountReference}")
@@ -93,6 +96,29 @@ public class BillingAccountWebController {
     model.addAttribute("ledger", ledger.reversed());
     model.addAttribute("activeTab", TERM_TABS.contains(tab) ? tab : "summary");
     return "accounts/terms";
+  }
+
+  /**
+   * Puts a question to the assistant and re-renders the terms screen with the answer on it.
+   *
+   * <p>A POST that renders rather than redirects. The usual reason to redirect after a POST is to stop
+   * a refresh repeating a change, and there is no change here: the assistant reads. Redirecting would
+   * mean carrying the answer through a flash attribute to display something the request already had.
+   *
+   * <p>The term and tab are carried through so that asking a question does not silently move the reader
+   * back to the first term's summary panel.
+   */
+  @PostMapping("/{accountReference}/assistant")
+  public String ask(
+      @PathVariable String accountReference,
+      @RequestParam(required = false) String term,
+      @RequestParam(required = false, defaultValue = "summary") String tab,
+      @RequestParam(required = false) String question,
+      Model model) {
+
+    model.addAttribute("assistantAnswer", assistantPanel.answer(accountReference, question));
+    model.addAttribute("assistantQuestion", question);
+    return terms(accountReference, term, tab, model);
   }
 
   /**

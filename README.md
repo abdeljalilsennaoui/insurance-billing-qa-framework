@@ -3,7 +3,7 @@
 [![CI](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=abdeljalilsennaoui_insurance-billing-qa-framework&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=abdeljalilsennaoui_insurance-billing-qa-framework)
 [![Coverage](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework/branch/main/graph/badge.svg)](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework)
-![Tests](https://img.shields.io/badge/tests-524%20passing-success)
+![Tests](https://img.shields.io/badge/tests-539%20passing-success)
 
 ![Java](https://img.shields.io/badge/Java-21-007396)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F)
@@ -22,7 +22,7 @@ layers of QA automation that exercise it, with the pipeline that runs all of it 
 
 | | |
 |---|---|
-| **Automated tests** | **<!--count:total-->524<!--/count-->**, all passing · 520 run on every pull request |
+| **Automated tests** | **<!--count:total-->539<!--/count-->**, all passing · 535 run on every pull request |
 | **Test levels** | unit · integration · API · UI · BDD · smoke · performance |
 | **Coverage** | 98.4% line, 87.6% branch — [measured full-stack](docs/coverage.md), black-box suites included |
 | **Static analysis** | SonarQube Cloud quality gate **passing** — 0 bugs, 0 vulnerabilities, 0 security hotspots |
@@ -125,15 +125,15 @@ other.
 | Suite | Tests | Runner | In CI |
 |---|---:|---|---|
 | Domain and service unit | <!--count:unit-->176<!--/count--> | JUnit 5 | yes |
-| Application integration (API + web layer) | <!--count:integration-->125<!--/count--> | JUnit 5 + MockMvc | yes |
+| Application integration (API + web layer) | <!--count:integration-->140<!--/count--> | JUnit 5 + MockMvc | yes |
 | API automation (incl. 7 SOAP, 4 `test-support`) | <!--count:api-->108<!--/count--> | TestNG + REST Assured | 104 of 108 |
 | UI automation | <!--count:ui-->60<!--/count--> | TestNG + Selenium 4 | yes |
 | BDD scenarios (24 API + 19 UI) | <!--count:bdd-->43<!--/count--> | Cucumber 7 + TestNG | yes |
 | Smoke | <!--count:cypress-->12<!--/count--> | Cypress | yes |
-| **Total** | **<!--count:total-->524<!--/count-->** | | **520** |
+| **Total** | **<!--count:total-->539<!--/count-->** | | **535** |
 | Performance | 1 plan | JMeter | no — run manually, see [perf](perf/README.md) |
 
-520 of the 524 run on every pull request across five CI jobs, with a sixth that runs no tests and
+535 of the 539 run on every pull request across five CI jobs, with a sixth that runs no tests and
 publishes their merged coverage. The four excluded are the `test-support` reset tests, which wipe the
 database and therefore cannot run beside anything else; `scripts/coverage.sh` runs them last, on their
 own.
