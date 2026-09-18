@@ -391,6 +391,33 @@ by the author rather than discover for themselves.
 
 ---
 
+## 13. A second live provider, and what it is for
+
+The assistant was built behind a port from the start, and a port with one implementation is an
+assertion nobody has tested. `GeminiBillingAssistant` is the test of it: a new class and a config
+value, with no edit to the console, the REST endpoint, the tool registry, or any suite above them.
+
+**Why Gemini specifically.** Its free tier needs no card and no paid plan, which is the difference
+between a live model that runs on a schedule and one that runs when somebody is willing to pay for it.
+A weekly evaluation over a few dozen prompts sits well inside the published limits.
+
+**The system prompt is shared, not copied.** `AssistantSystemPrompt` is given to both providers
+verbatim. Two copies would drift the first time one was tuned, and an evaluation comparing two models'
+answers would then be comparing two prompts.
+
+**REST rather than a vendor SDK.** Google's Java client is a large dependency for a request that is
+four fields and a nested map, and `RestClient` ships with the web starter already here. The key
+travels in the `x-goog-api-key` header rather than the `?key=` query parameter the quickstart uses,
+because URLs end up in access logs and error messages.
+
+**What has and has not been run.** The adapter is exercised end to end against a stubbed API with
+MockWebServer — the tool loop, the usage accounting, the finish reasons, the rate limit, and the
+runaway-loop ceiling — with no key, no network and no cost, on every pull request. **No request has
+been made to the real Gemini API from this repository**, exactly as with the Anthropic provider, and
+that stays stated here until one has.
+
+---
+
 ## Where to start reading
 
 | File | Why |

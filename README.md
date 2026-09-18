@@ -61,8 +61,15 @@ invisible to anyone testing in the other language.
 
 Both screens also carry a billing assistant: ask why the figures are what they are, and the answer
 comes back with the billing records it was read from. It ships **replaying recorded answers, and says
-so on screen**. The four recordings were written by hand, and no request has yet been made to a live
-model from this repository. What the tests hold it to is the part that has a right answer: every figure
+so on screen**. The four recordings were written by hand.
+
+The assistant sits behind a port with four implementations — `replay`, `disabled`, `anthropic` and
+`gemini` — chosen by one property. Both model-backed providers are handed the same system prompt and
+the same read-only tool registry, so a difference between their answers is the model and not the
+instructions, and the grounding, injection and PII suites are written against the endpoint rather than
+against whichever one is configured. Both are exercised end to end against stubbed APIs on every pull
+request; **no request has yet been made to either live API from this repository**, and that sentence
+stays here until one has. What the tests hold it to is the part that has a right answer: every figure
 it states must appear in the records it cites, a question those records cannot answer gets no answer
 rather than an invented one ([screenshot](docs/screenshots/20-assistant-no-answer.png)), and a question
 asked in French is answered in French from the same records
