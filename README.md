@@ -3,7 +3,7 @@
 [![CI](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=abdeljalilsennaoui_insurance-billing-qa-framework&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=abdeljalilsennaoui_insurance-billing-qa-framework)
 [![Coverage](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework/branch/main/graph/badge.svg)](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework)
-![Tests](https://img.shields.io/badge/tests-571%20passing-success)
+![Tests](https://img.shields.io/badge/tests-590%20passing-success)
 
 ![Java](https://img.shields.io/badge/Java-25-007396)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F)
@@ -22,7 +22,7 @@ layers of QA automation that exercise it, with the pipeline that runs all of it 
 
 | | |
 |---|---|
-| **Automated tests** | **<!--count:total-->571<!--/count-->**, all passing · 567 run on every pull request |
+| **Automated tests** | **<!--count:total-->590<!--/count-->**, all passing · 586 run on every pull request |
 | **Test levels** | unit · integration · API · UI · BDD · smoke · performance |
 | **Coverage** | 98.4% line, 87.6% branch — [measured full-stack](docs/coverage.md), black-box suites included |
 | **Static analysis** | SonarQube Cloud quality gate **passing** — 0 bugs, 0 vulnerabilities, 0 security hotspots |
@@ -73,7 +73,7 @@ asked in French is answered in French from the same records
 | Area | Tools and techniques | Where to look |
 |---|---|---|
 | **UI automation** | Selenium 4, Page Object Model, explicit waits only, parallel-safe `ThreadLocal` drivers | [`qa-ui-tests`](qa-ui-tests) — <!--count:ui-->67<!--/count--> tests |
-| **API automation** | REST Assured, TestNG groups and data providers, negative-path coverage | [`qa-api-tests`](qa-api-tests) — <!--count:api-->119<!--/count--> tests |
+| **API automation** | REST Assured, TestNG groups and data providers, negative-path coverage | [`qa-api-tests`](qa-api-tests) — <!--count:api-->129<!--/count--> tests |
 | **SOAP testing** | Contract-first XSD → WSDL, fault-path assertions | 7 tests in `qa-api-tests` |
 | **BDD** | Cucumber 7, Gherkin features, step definitions with no automation logic in them | [`qa-bdd-tests`](qa-bdd-tests) — <!--count:bdd-->53<!--/count--> scenarios |
 | **JavaScript E2E** | Cypress 15 smoke suite, as independent triangulation | [`cypress`](cypress) — <!--count:cypress-->15<!--/count--> tests |
@@ -136,15 +136,15 @@ other.
 | Suite | Tests | Runner | In CI |
 |---|---:|---|---|
 | Domain and service unit | <!--count:unit-->176<!--/count--> | JUnit 5 | yes |
-| Application integration (API + web layer) | <!--count:integration-->141<!--/count--> | JUnit 5 + MockMvc | yes |
-| API automation (incl. 7 SOAP, 4 `test-support`) | <!--count:api-->119<!--/count--> | TestNG + REST Assured | 115 of 119 |
+| Application integration (API + web layer) | <!--count:integration-->150<!--/count--> | JUnit 5 + MockMvc | yes |
+| API automation (incl. 7 SOAP, 4 `test-support`) | <!--count:api-->129<!--/count--> | TestNG + REST Assured | 115 of 119 |
 | UI automation | <!--count:ui-->67<!--/count--> | TestNG + Selenium 4 | yes |
 | BDD scenarios (29 API + 24 UI) | <!--count:bdd-->53<!--/count--> | Cucumber 7 + TestNG | yes |
 | Smoke | <!--count:cypress-->15<!--/count--> | Cypress | yes |
-| **Total** | **<!--count:total-->571<!--/count-->** | | **567** |
+| **Total** | **<!--count:total-->590<!--/count-->** | | **586** |
 | Performance | 1 plan | JMeter | no — run manually, see [perf](perf/README.md) |
 
-567 of the 571 run on every pull request across five CI jobs, with a sixth that runs no tests and
+586 of the 590 run on every pull request across five CI jobs, with a sixth that runs no tests and
 publishes their merged coverage. The four excluded are the `test-support` reset tests, which wipe the
 database and therefore cannot run beside anything else; `scripts/coverage.sh` runs them last, on their
 own.
@@ -244,6 +244,7 @@ Once started, the application is available at `http://localhost:8080`:
 | `/api/customers`, `/api/policies`, `/api/invoices` | REST API |
 | `/api/invoices/{id}/payments` | Payment endpoint |
 | `/actuator/health` | Readiness probe used by the start script and CI |
+| `/mcp` | MCP server: the same read-only tools the assistant uses |
 | `/h2-console` | In-memory database console |
 
 It runs against in-memory H2 and seeds a deterministic baseline at startup: 3 customers, 4 policies
@@ -263,6 +264,41 @@ The API distinguishes failure kinds so a test can prove *why* something was refu
 
 A zero payment is therefore `422 AMOUNT_NOT_POSITIVE`, not a generic 400. Without that split, an
 assertion could not tell "the client sent nonsense" from "the platform applied a billing rule".
+
+## The MCP server
+
+The platform publishes its read-only surface over the [Model Context Protocol](https://modelcontextprotocol.io)
+at `/mcp`, so an MCP client can query billing data directly. It exposes **the same four tools the
+assistant reads through** — `find_account`, `find_term`, `get_installment_schedule`, `get_ledger` —
+from one registry with one set of tests, so neither consumer can be widened without the other.
+
+It is read-only, and that is a decision rather than a limitation: money moves through the payment
+endpoints, which apply the term's rules, and a second way in would be a second place for those rules
+to be missed. A tool that would move money does not exist to be called.
+
+Point Claude Code at a locally running instance:
+
+```bash
+claude mcp add --transport http insurance-billing http://localhost:8080/mcp
+```
+
+Any client that speaks Streamable HTTP can use the same URL. The surface answers a single JSON-RPC
+POST with no session to open first, so it is also reachable with `curl`:
+
+```bash
+curl -s -X POST http://localhost:8080/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+The `Accept` header carries both content types because the protocol requires a client to accept both;
+without it the server answers `400`, which the API suite asserts rather than works around.
+
+**No authentication, deliberately.** This is a portfolio application with seeded data whose REST API is
+equally open. A real deployment would put `/mcp` behind the same authentication as the API and scope
+the tools to the caller's own accounts — [`docs/design-rationale.md`](docs/design-rationale.md) says
+so rather than leaving a reader to wonder whether it was forgotten.
 
 ## Prerequisites
 
