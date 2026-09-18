@@ -98,5 +98,5 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 25)   # macOS
 
 ## What a clean run looks like
 
-590 tests, all passing, in about four minutes end to end — the per-suite breakdown and the durations are
+600 tests, all passing, in about four minutes end to end — the per-suite breakdown and the durations are
 in the [test report](Test-Report).

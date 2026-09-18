@@ -340,7 +340,7 @@ as a trend and as evidence that concurrent payment writes produce no errors.
 describe a structured self-review of the diff and never imply a second reviewer; GitHub does not count
 an author's own approval, and that limitation was respected rather than worked around.
 
-**<!--count:total-->590<!--/count--> tests is a lot for this much application**, deliberately — the application exists in order to be
+**<!--count:total-->600<!--/count--> tests is a lot for this much application**, deliberately — the application exists in order to be
 tested, and the ratio would be wrong in a product repository. What is worth defending is the
 *distribution*: the coverage is concentrated on the money-handling rules, and sixteen of the <!--count:requirements-->33<!--/count-->
 requirements in the [traceability matrix](requirements-traceability-matrix.md) are covered at four or
