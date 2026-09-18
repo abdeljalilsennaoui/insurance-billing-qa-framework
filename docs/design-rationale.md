@@ -340,15 +340,54 @@ as a trend and as evidence that concurrent payment writes produce no errors.
 describe a structured self-review of the diff and never imply a second reviewer; GitHub does not count
 an author's own approval, and that limitation was respected rather than worked around.
 
-**171 tests is a lot for this much application**, deliberately — the application exists in order to be
+**<!--count:total-->590<!--/count--> tests is a lot for this much application**, deliberately — the application exists in order to be
 tested, and the ratio would be wrong in a product repository. What is worth defending is the
-*distribution*: the coverage is concentrated on the money-handling rules, and nine of the twenty-three
+*distribution*: the coverage is concentrated on the money-handling rules, and sixteen of the <!--count:requirements-->33<!--/count-->
 requirements in the [traceability matrix](requirements-traceability-matrix.md) are covered at four or
 more levels.
 
 **99% line coverage does not mean 99% of the behaviour is verified.** A line counts as covered if a test
 executed it, whether or not anything asserted on what it did. DEF-012 is the proof, and
 [`coverage.md`](coverage.md) names every remaining gap individually.
+
+---
+
+## 12. Publishing the platform over MCP
+
+The MCP server at `/mcp` exposes the registry the assistant already reads through, and nothing else.
+Three decisions in it are worth the paragraph.
+
+**Spring AI was the framework-idiomatic choice and was rejected on evidence.**
+`spring-ai-starter-mcp-server-webmvc` 2.0.1 declares `spring-boot-starter-web` **4.1.1**, read from its
+published POM. Adopting it would drag this application from Spring Boot 3.5 to 4.1, which is a
+different project with a different risk profile. `mcp-core` is a plain library with no opinion about
+the framework around it, and its servlet transport mounts on the container the application already
+runs.
+
+**`mcp-core` plus `mcp-json-jackson2`, not the aggregate `mcp` artifact.** `mcp` pulls
+`mcp-json-jackson3`, and this is a Jackson 2 application: two Jackson majors on one classpath to
+serialise the same four DTOs is a cost with nothing bought. Binding to Jackson 2 also lets the MCP
+surface use the application's own `ObjectMapper`, which is what makes a tool result **byte-identical**
+to the REST response behind it rather than merely similar — and that identity is asserted, tool by
+tool, in `McpSurfaceApiIT`.
+
+**Stateless rather than session-based.** Of the three servlet transports the SDK ships, the stateless
+one answers a single JSON-RPC POST without a session to open first. Every tool is a read against data
+the caller names in the call, so there is no per-client state a session would hold, and the surface
+stays checkable with one `curl` — the difference between a reviewer verifying the claim in the README
+and taking it on trust.
+
+**`mcp-test` is not used, and the acceptance criteria asked for it.** Its classes are abstract
+conformance suites written for people implementing the SDK itself, not utilities for testing an
+application's tools, and its POM pulls `org.testcontainers:toxiproxy` at compile scope — a Docker
+requirement, in a repository that documents Docker as unavailable and uses in-memory H2 because of it.
+The coverage the criterion wanted exists: `McpServerEndpointTest` drives the endpoint with the SDK's
+own client, and `McpSurfaceApiIT` drives it as raw JSON-RPC from outside the application.
+
+**There is no authentication on `/mcp`**, matching the REST API beside it. A real deployment would put
+both behind the same authentication and scope the tools to the caller's own accounts. It is listed
+here because an unauthenticated data endpoint is exactly the kind of thing a reader should see named
+by the author rather than discover for themselves.
 
 ---
 

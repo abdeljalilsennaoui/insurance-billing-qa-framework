@@ -29,7 +29,7 @@ silently broke.
 
 | | |
 |---|---|
-| Automated tests | **571**, all passing — [see the report](Test-Report) |
+| Automated tests | **590**, all passing — [see the report](Test-Report) |
 | Test levels | domain unit, application integration, API, UI, BDD, smoke, performance |
 | Line coverage | **98.4%** full-stack · 87.6% branch, quality gate passing — [how that is measured](Coverage-and-Quality) |
 | Defects found and fixed | **14**, each with steps and a fixing commit — [log](Defect-Log) |

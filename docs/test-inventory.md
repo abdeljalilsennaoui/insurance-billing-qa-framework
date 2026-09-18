@@ -11,12 +11,12 @@ used to be typed in several places and drifted apart from the suite and from eac
 | Layer | Count |
 |---|---:|
 | Application — domain and service unit | 176 |
-| Application — Spring integration | 141 |
-| API (REST Assured) | 119 |
+| Application — Spring integration | 150 |
+| API (REST Assured) | 129 |
 | UI (Selenium) | 67 |
 | BDD scenarios (Cucumber) | 53 |
 | Smoke (Cypress) | 15 |
-| **Total** | **571** |
+| **Total** | **590** |
 
 ## By class
 
@@ -55,7 +55,9 @@ used to be typed in several places and drifted apart from the suite and from eac
 | `AnthropicBillingAssistantTest` | 13 | pass |
 | `BillingReadToolsTest` | 13 | pass |
 | `ShippedTranscriptsTest` | 6 | pass |
-| **Subtotal** | **141** |  |
+| `BillingMcpToolsTest` | 5 | pass |
+| `McpServerEndpointTest` | 4 | pass |
+| **Subtotal** | **150** |  |
 
 ### API (REST Assured)
 
@@ -67,12 +69,13 @@ used to be typed in several places and drifted apart from the suite and from eac
 | `CustomerPolicyApiIT` | 13 | pass |
 | `InstallmentScheduleApiIT` | 11 | pass |
 | `InvoicePaymentApiIT` | 10 | pass |
+| `McpSurfaceApiIT` | 10 | pass |
 | `PaymentValidationApiIT` | 22 | pass |
 | `ResetEndpointIT` | 4 | pass |
 | `ReturnedPaymentApiIT` | 14 | pass |
 | `SoapInvoiceStatusIT` | 7 | pass |
 | `TransactionLedgerApiIT` | 22 | pass |
-| **Subtotal** | **119** |  |
+| **Subtotal** | **129** |  |
 
 ### UI (Selenium)
 
@@ -123,9 +126,9 @@ A test in neither `regression` nor `ui-regression` never runs in CI.
 
 | Group | Tests |
 |---|---:|
-| `negative` | 39 |
-| `regression` | 87 |
-| `smoke` | 14 |
+| `negative` | 42 |
+| `regression` | 97 |
+| `smoke` | 16 |
 | `soap` | 7 |
 | `test-support` | 4 |
 | `ui-negative` | 8 |
