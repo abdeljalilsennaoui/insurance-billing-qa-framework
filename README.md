@@ -3,7 +3,7 @@
 [![CI](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/abdeljalilsennaoui/insurance-billing-qa-framework/actions/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=abdeljalilsennaoui_insurance-billing-qa-framework&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=abdeljalilsennaoui_insurance-billing-qa-framework)
 [![Coverage](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework/branch/main/graph/badge.svg)](https://codecov.io/gh/abdeljalilsennaoui/insurance-billing-qa-framework)
-![Tests](https://img.shields.io/badge/tests-590%20passing-success)
+![Tests](https://img.shields.io/badge/tests-600%20passing-success)
 
 ![Java](https://img.shields.io/badge/Java-25-007396)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F)
@@ -22,7 +22,7 @@ layers of QA automation that exercise it, with the pipeline that runs all of it 
 
 | | |
 |---|---|
-| **Automated tests** | **<!--count:total-->590<!--/count-->**, all passing · 586 run on every pull request |
+| **Automated tests** | **<!--count:total-->600<!--/count-->**, all passing · 596 run on every pull request |
 | **Test levels** | unit · integration · API · UI · BDD · smoke · performance |
 | **Coverage** | 98.4% line, 87.6% branch — [measured full-stack](docs/coverage.md), black-box suites included |
 | **Static analysis** | SonarQube Cloud quality gate **passing** — 0 bugs, 0 vulnerabilities, 0 security hotspots |
@@ -61,8 +61,15 @@ invisible to anyone testing in the other language.
 
 Both screens also carry a billing assistant: ask why the figures are what they are, and the answer
 comes back with the billing records it was read from. It ships **replaying recorded answers, and says
-so on screen**. The four recordings were written by hand, and no request has yet been made to a live
-model from this repository. What the tests hold it to is the part that has a right answer: every figure
+so on screen**. The four recordings were written by hand.
+
+The assistant sits behind a port with four implementations — `replay`, `disabled`, `anthropic` and
+`gemini` — chosen by one property. Both model-backed providers are handed the same system prompt and
+the same read-only tool registry, so a difference between their answers is the model and not the
+instructions, and the grounding, injection and PII suites are written against the endpoint rather than
+against whichever one is configured. Both are exercised end to end against stubbed APIs on every pull
+request; **no request has yet been made to either live API from this repository**, and that sentence
+stays here until one has. What the tests hold it to is the part that has a right answer: every figure
 it states must appear in the records it cites, a question those records cannot answer gets no answer
 rather than an invented one ([screenshot](docs/screenshots/20-assistant-no-answer.png)), and a question
 asked in French is answered in French from the same records
@@ -136,15 +143,15 @@ other.
 | Suite | Tests | Runner | In CI |
 |---|---:|---|---|
 | Domain and service unit | <!--count:unit-->176<!--/count--> | JUnit 5 | yes |
-| Application integration (API + web layer) | <!--count:integration-->150<!--/count--> | JUnit 5 + MockMvc | yes |
+| Application integration (API + web layer) | <!--count:integration-->160<!--/count--> | JUnit 5 + MockMvc | yes |
 | API automation (incl. 7 SOAP, 4 `test-support`) | <!--count:api-->129<!--/count--> | TestNG + REST Assured | 115 of 119 |
 | UI automation | <!--count:ui-->67<!--/count--> | TestNG + Selenium 4 | yes |
 | BDD scenarios (29 API + 24 UI) | <!--count:bdd-->53<!--/count--> | Cucumber 7 + TestNG | yes |
 | Smoke | <!--count:cypress-->15<!--/count--> | Cypress | yes |
-| **Total** | **<!--count:total-->590<!--/count-->** | | **586** |
+| **Total** | **<!--count:total-->600<!--/count-->** | | **596** |
 | Performance | 1 plan | JMeter | no — run manually, see [perf](perf/README.md) |
 
-586 of the 590 run on every pull request across five CI jobs, with a sixth that runs no tests and
+596 of the 600 run on every pull request across five CI jobs, with a sixth that runs no tests and
 publishes their merged coverage. The four excluded are the `test-support` reset tests, which wipe the
 database and therefore cannot run beside anything else; `scripts/coverage.sh` runs them last, on their
 own.

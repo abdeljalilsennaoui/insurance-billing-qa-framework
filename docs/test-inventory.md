@@ -11,12 +11,12 @@ used to be typed in several places and drifted apart from the suite and from eac
 | Layer | Count |
 |---|---:|
 | Application — domain and service unit | 176 |
-| Application — Spring integration | 150 |
+| Application — Spring integration | 160 |
 | API (REST Assured) | 129 |
 | UI (Selenium) | 67 |
 | BDD scenarios (Cucumber) | 53 |
 | Smoke (Cypress) | 15 |
-| **Total** | **590** |
+| **Total** | **600** |
 
 ## By class
 
@@ -54,10 +54,11 @@ used to be typed in several places and drifted apart from the suite and from eac
 | `LocalisedConsoleWebTest` | 13 | pass |
 | `AnthropicBillingAssistantTest` | 13 | pass |
 | `BillingReadToolsTest` | 13 | pass |
+| `GeminiBillingAssistantTest` | 10 | pass |
 | `ShippedTranscriptsTest` | 6 | pass |
 | `BillingMcpToolsTest` | 5 | pass |
 | `McpServerEndpointTest` | 4 | pass |
-| **Subtotal** | **150** |  |
+| **Subtotal** | **160** |  |
 
 ### API (REST Assured)
 

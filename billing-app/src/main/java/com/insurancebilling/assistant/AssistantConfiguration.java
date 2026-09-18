@@ -5,6 +5,7 @@ import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
 
 /**
  * Chooses which assistant the application runs with.
@@ -25,10 +26,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AssistantConfiguration {
 
+  private static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
+
   @Bean
   public BillingAssistant billingAssistant(
       @Value("${billing.assistant.provider:replay}") String provider,
-      @Value("${billing.assistant.model:claude-opus-5}") String model,
+      @Value("${billing.assistant.model:}") String model,
       @Value("${billing.assistant.max-tokens:2048}") long maxTokens,
       @Value("${billing.assistant.base-url:}") String baseUrl,
       BillingReadTools tools) {
@@ -37,7 +40,16 @@ public class AssistantConfiguration {
       case DisabledBillingAssistant.PROVIDER -> new DisabledBillingAssistant();
       case AnthropicBillingAssistant.PROVIDER ->
           new AnthropicBillingAssistant(
-              anthropicClient(baseUrl, System.getenv("ANTHROPIC_API_KEY")), tools, model, maxTokens);
+              anthropicClient(baseUrl, System.getenv("ANTHROPIC_API_KEY")),
+              tools,
+              modelOr(model, AnthropicBillingAssistant.DEFAULT_MODEL),
+              maxTokens);
+      case GeminiBillingAssistant.PROVIDER ->
+          new GeminiBillingAssistant(
+              geminiClient(baseUrl, System.getenv("GEMINI_API_KEY")),
+              tools,
+              modelOr(model, GeminiBillingAssistant.DEFAULT_MODEL),
+              maxTokens);
       default ->
           throw new IllegalStateException(
               "billing.assistant.provider is '"
@@ -48,8 +60,38 @@ public class AssistantConfiguration {
                   + DisabledBillingAssistant.PROVIDER
                   + ", "
                   + AnthropicBillingAssistant.PROVIDER
+                  + ", "
+                  + GeminiBillingAssistant.PROVIDER
                   + ".");
     };
+  }
+
+  /**
+   * Which model to ask, when the property does not say.
+   *
+   * <p>One property, two providers, and no model name that means anything to both of them. An unset
+   * property therefore means "whatever this provider's default is" rather than a Claude model id sent
+   * to Google, which would fail at the first call with a message about an unknown model.
+   */
+  private String modelOr(String configured, String providerDefault) {
+    return configured == null || configured.isBlank() ? providerDefault : configured.strip();
+  }
+
+  /**
+   * The Gemini client.
+   *
+   * <p>The key travels in the {@code x-goog-api-key} header rather than the {@code ?key=} query
+   * parameter the quickstart uses. Both are accepted; a credential in a URL is not, because URLs are
+   * what end up in access logs, proxy logs and error messages.
+   *
+   * <p>{@code billing.assistant.base-url} points this at a stub on localhost in the tests, exactly as
+   * it does for the Anthropic client.
+   */
+  RestClient geminiClient(String baseUrl, String apiKey) {
+    return RestClient.builder()
+        .baseUrl(baseUrl == null || baseUrl.isBlank() ? GEMINI_BASE_URL : baseUrl.strip())
+        .defaultHeader("x-goog-api-key", apiKey == null ? "" : apiKey)
+        .build();
   }
 
   /**
