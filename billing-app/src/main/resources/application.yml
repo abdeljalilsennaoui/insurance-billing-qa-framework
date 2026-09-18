@@ -68,6 +68,13 @@ billing:
     #
     #   replay    - answers from the recorded exchanges in src/main/resources/transcripts
     #   disabled  - answers nothing, and the console renders the panel as unavailable
+    #   anthropic - calls Claude, with ANTHROPIC_API_KEY in the environment
+    #   gemini    - calls Gemini, with GEMINI_API_KEY in the environment
+    #
+    # The two model-backed providers are given the same system prompt and the same tool registry, so
+    # a difference between their answers is the model rather than the instructions. Gemini's free tier
+    # needs no card, which is what lets a live model be exercised on a schedule rather than only in
+    # recordings; billing.assistant.model overrides the model, and defaults per provider when unset.
     #
     # replay is the default so that cloning this repository and running it produces a working
     # assistant with no API key, no network and no cost, and so that every suite exercising it gets
